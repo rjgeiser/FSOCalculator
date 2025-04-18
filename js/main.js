@@ -1270,7 +1270,7 @@ SALARY_TABLES.SFS = {
 };
 
 // Update getFormData function to handle SFS ranks
-function getFormData() {
+function FormManager.getFormData() {
     const grade = document.getElementById('fs-grade').value;
     const step = document.getElementById('fs-step').value;
     
@@ -1309,9 +1309,10 @@ function getFormData() {
         salaryYear3: parseInt(document.getElementById('salary-year-3').value) || 0,
         annualLeaveBalance: parseInt(document.getElementById('annual-leave-balance').value) || 0
     };
+}
 
 // Get form data function
-static getFormData() {
+static FormManager.getFormData() {
     const serviceComputationDate = document.getElementById('service-computation-date')?.value;
     const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
     const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
@@ -1514,7 +1515,7 @@ class Calculator {
                 UIManager.showLoading();
                 UIManager.clearError();
 
-                const formData = this.getFormData();
+                const formData = this.FormManager.getFormData();
                 FormValidator.validateFormData(formData);
 
                 const results = {
@@ -1553,7 +1554,7 @@ class Calculator {
         }
     }
 
-    static getFormData() {
+    static FormManager.getFormData() {
         const serviceComputationDate = document.getElementById('service-computation-date')?.value;
         const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
         const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
