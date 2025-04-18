@@ -446,16 +446,21 @@ class FormManager {
         }
     } else {
         baseSalary = SALARY_TABLES[grade].steps[parseInt(step) - 1];
+  
   static getFormData() {
-  const grade = document.getElementById('fs-grade').value;
-      const step = document.getElementById('fs-step').value;
-      
-      // Get the actual salary based on grade and step
-      let baseSalary;
-      if (grade === 'SFS') {
-          if (step == 14) {
-              baseSalary = SFS_RANKS['Career Minister'].salary;
-          }
+    const grade = document.getElementById('fs-grade').value;
+        const step = document.getElementById('fs-step').value;
+        
+        // Get the actual salary based on grade and step
+        let baseSalary;
+        if (grade === 'SFS') {
+            if (step == 14) {
+                baseSalary = SFS_RANKS['Career Minister'].salary;
+            } else if (step >= 11) {
+                baseSalary = SFS_RANKS['Minister Counselor'].salaries[step];
+            } else {
+                baseSalary = SFS_RANKS['Counselor'].salaries[step];
+  }
     }
     
     return {
@@ -1316,20 +1321,7 @@ SALARY_TABLES.SFS = {
 
 
 // Get form data function
-static getFormData() {
-    const serviceComputationDate = document.getElementById('service-computation-date')?.value;
-    const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
-    const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
-    
-    // Calculate years of service from SCD if available
-    let calculatedYearsService;
-    let serviceDuration = null;
-    
-    if (serviceComputationDate) {
-        serviceDuration = calculateServiceDuration(serviceComputationDate);
-        calculatedYearsService = serviceDuration ? serviceDuration.totalYears : yearsServiceInput;
-        console.log('Using service duration calculated from SCD:', calculatedYearsService);
-            } else {
+ else {
         calculatedYearsService = yearsServiceInput;
         console.log('Using manually entered years of service:', calculatedYearsService);
     }
@@ -1558,20 +1550,7 @@ class Calculator {
         }
     }
 
-    static getFormData() {
-        const serviceComputationDate = document.getElementById('service-computation-date')?.value;
-        const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
-        const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
-        
-        // Calculate years of service from SCD if available
-        let calculatedYearsService;
-        let serviceDuration = null;
-        
-        if (serviceComputationDate) {
-            serviceDuration = calculateServiceDuration(serviceComputationDate);
-            calculatedYearsService = serviceDuration ? serviceDuration.totalYears : yearsServiceInput;
-            console.log('Using service duration calculated from SCD:', calculatedYearsService);
-        } else {
+     else {
             calculatedYearsService = yearsServiceInput;
             console.log('Using manually entered years of service:', calculatedYearsService);
         }
