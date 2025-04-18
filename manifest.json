@@ -7,6 +7,14 @@
     "background_color": "#ffffff",
     "theme_color": "#2c5282",
     "orientation": "portrait",
+
+    "categories": [
+    "finance",
+    "business",
+    "productivity"
+    ],
+    "prefer_related_applications": false,
+    
     "icons": [
       {
         "src": "img/icon-32.png",
@@ -45,8 +53,7 @@
         "purpose": "any maskable"
       }
     ],
-    "prefer_related_applications": false,
-    "categories": ["utilities", "finance"],
+   
     "shortcuts": [
       {
         "name": "Calculate Benefits",
