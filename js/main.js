@@ -437,6 +437,65 @@ function generateHealthInsuranceRecommendations(fehbRates, cobraCost, acaEstimat
 
 // ======== UI & Form Management ========
 
+class FormManager {
+  static init() {
+    const f = DOM.form;
+    f.removeEventListener('submit', FormManager.onSubmit);
+    f.addEventListener('submit', FormManager.onSubmit);
+    f.removeEventListener('reset', FormManager.onReset);
+    f.addEventListener('reset', FormManager.onReset);
+  }
+
+  static onSubmit(e) {
+    e.preventDefault();
+    UIManager.clearError();
+    UIManager.showLoading();
+    try {
+      const data = FormManager.collectFormData();
+      FormValidator.validate(data);
+      const results = Calculator.calculateAll(data);
+      Calculator.updateResults(results);
+      UIManager.showResults();
+    } catch (err) {
+      ErrorHandler.handle(err, 'form submit');
+    } finally {
+      UIManager.hideLoading();
+    }
+  }
+
+  static onReset() {
+    UIManager.clearError();
+    document.querySelectorAll('.results-container').forEach((c) => (c.innerHTML = ''));
+  }
+
+  static collectFormData() {
+    const serviceDuration = DOM.serviceComputationDate.value
+      ? calculateServiceDuration(DOM.serviceComputationDate.value)
+      : null;
+    const yearsService = serviceDuration ? serviceDuration.totalYears : parseInt(DOM.yearsService.value, 10);
+    const sick = calculateSickLeaveServiceDuration(parseFloat(DOM.sickLeaveBalance.value) || 0);
+    return {
+      fsGrade: DOM.fsGrade.value,
+      fsStep: DOM.fsStep.value,
+      yearsService,
+      serviceDuration,
+      sickLeaveDuration: sick,
+      age: parseInt(DOM.age.value, 10),
+      currentPost: 'Washington, DC',
+      currentPlan: DOM.currentPlan.value,
+      coverageType: DOM.coverageType.value,
+      state: DOM.state.value,
+      teraEligible: DOM.teraEligible.value,
+      teraYears: DOM.teraYears.value,
+      teraAge: DOM.teraAge.value,
+      salaryYear1: parseInt(DOM.salaryYear1.value, 10) || 0,
+      salaryYear2: parseInt(DOM.salaryYear2.value, 10) || 0,
+      salaryYear3: parseInt(DOM.salaryYear3.value, 10) || 0,
+      annualLeaveBalance: parseInt(DOM.annualLeaveBalance.value, 10) || 0,
+    };
+  }
+}
+
 class ErrorHandler {
   static handle(error, context = '') {
     log('Error in', context, error);
@@ -567,64 +626,7 @@ class Calculator {
   }
 }
 
-class FormManager {
-  static init() {
-    const f = DOM.form;
-    f.removeEventListener('submit', FormManager.onSubmit);
-    f.addEventListener('submit', FormManager.onSubmit);
-    f.removeEventListener('reset', FormManager.onReset);
-    f.addEventListener('reset', FormManager.onReset);
-  }
 
-  static onSubmit(e) {
-    e.preventDefault();
-    UIManager.clearError();
-    UIManager.showLoading();
-    try {
-      const data = FormManager.collectFormData();
-      FormValidator.validate(data);
-      const results = Calculator.calculateAll(data);
-      Calculator.updateResults(results);
-      UIManager.showResults();
-    } catch (err) {
-      ErrorHandler.handle(err, 'form submit');
-    } finally {
-      UIManager.hideLoading();
-    }
-  }
-
-  static onReset() {
-    UIManager.clearError();
-    document.querySelectorAll('.results-container').forEach((c) => (c.innerHTML = ''));
-  }
-
-  static collectFormData() {
-    const serviceDuration = DOM.serviceComputationDate.value
-      ? calculateServiceDuration(DOM.serviceComputationDate.value)
-      : null;
-    const yearsService = serviceDuration ? serviceDuration.totalYears : parseInt(DOM.yearsService.value, 10);
-    const sick = calculateSickLeaveServiceDuration(parseFloat(DOM.sickLeaveBalance.value) || 0);
-    return {
-      fsGrade: DOM.fsGrade.value,
-      fsStep: DOM.fsStep.value,
-      yearsService,
-      serviceDuration,
-      sickLeaveDuration: sick,
-      age: parseInt(DOM.age.value, 10),
-      currentPost: 'Washington, DC',
-      currentPlan: DOM.currentPlan.value,
-      coverageType: DOM.coverageType.value,
-      state: DOM.state.value,
-      teraEligible: DOM.teraEligible.value,
-      teraYears: DOM.teraYears.value,
-      teraAge: DOM.teraAge.value,
-      salaryYear1: parseInt(DOM.salaryYear1.value, 10) || 0,
-      salaryYear2: parseInt(DOM.salaryYear2.value, 10) || 0,
-      salaryYear3: parseInt(DOM.salaryYear3.value, 10) || 0,
-      annualLeaveBalance: parseInt(DOM.annualLeaveBalance.value, 10) || 0,
-    };
-  }
-}
 
 
 // ======== Initialization ========
@@ -1310,21 +1312,7 @@ function getFormData() {
 }
 
 // Replace with a single, comprehensive handler:
-class FormManager {
-static init() {
-const calculatorForm= document.getElementById('calculator-form');
-if (calculatorForm) {
-    // Remove any existing event listeners
-    calculatorForm.removeEventListener('submit', FormManager.handleFormSubmit);
-    
-    // Add the submit event listener
-    calculatorForm.addEventListener('submit', (e) => {
-        e.preventDefault(); // Prevent form from submitting normally
-        e.stopPropagation(); // Stop event from bubbling
-        FormManager.handleFormSubmit(e);
-        return false; // Ensure the form doesn't reset
-    });
-}
+
 }
 
 // Get form data function
