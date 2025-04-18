@@ -1829,7 +1829,7 @@ SALARY_TABLES.SFS = {
 
 // Update getFormData function to handle SFS ranks
 
-static FormManager.getFormData() {
+static getFormData() {
     const serviceComputationDate = document.getElementById('service-computation-date')?.value;
     const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
     const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
