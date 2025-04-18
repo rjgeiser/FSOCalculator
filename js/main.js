@@ -1,689 +1,1205 @@
-// File: main.js
 
-// ======== Debug & Utility Functions ========
-const DEBUG = false;
-function log(...args) {
-  if (DEBUG) console.log(...args);
-}
+// Global form reference
+let calculatorForm;
 
-function debounce(fn, wait = 150) {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => fn.apply(this, args), wait);
-  };
-}
-
-function throttle(fn, limit = 200) {
-  let inThrottle;
-  return (...args) => {
-    if (!inThrottle) {
-      fn.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => (inThrottle = false), limit);
-    }
-  };
-}
-
-function memoize(fn) {
-  const cache = new Map();
-  return (...args) => {
-    const key = JSON.stringify(args);
-    if (cache.has(key)) return cache.get(key);
-    const result = fn(...args);
-    cache.set(key, result);
-    return result;
-  };
-}
-
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function validateNumber(value, min, max) {
-  const num = parseFloat(value);
-  if (isNaN(num)) return false;
-  if (min !== undefined && num < min) return false;
-  if (max !== undefined && num > max) return false;
-  return true;
-}
-
-
-// ======== Cache DOM Elements ========
-const DOM = {
-  form: document.getElementById('calculator-form'),
-  fsGrade: document.getElementById('fs-grade'),
-  fsStep: document.getElementById('fs-step'),
-  yearsService: document.getElementById('years-service'),
-  age: document.getElementById('age'),
-  currentPlan: document.getElementById('current-plan'),
-  coverageType: document.getElementById('coverage-type'),
-  state: document.getElementById('state'),
-  teraEligible: document.getElementById('tera-eligible'),
-  teraYears: document.getElementById('tera-years'),
-  teraAge: document.getElementById('tera-age'),
-  salaryYear1: document.getElementById('salary-year-1'),
-  salaryYear2: document.getElementById('salary-year-2'),
-  salaryYear3: document.getElementById('salary-year-3'),
-  sickLeaveBalance: document.getElementById('sick-leave-balance'),
-  serviceComputationDate: document.getElementById('service-computation-date'),
-  annualLeaveBalance: document.getElementById('annual-leave-balance'),
-  severanceResults: document.getElementById('severance-results'),
-  retirementResults: document.getElementById('retirement-results'),
-  healthResults: document.getElementById('health-results'),
-  loading: document.getElementById('loading'),
-  error: document.getElementById('error'),
-  tabButtons: document.querySelectorAll('.tab-button'),
-};
-
-
-// ======== Helper Calculation Functions ========
-function calculateServiceDuration(serviceComputationDate) {
-  if (!serviceComputationDate) return null;
-  const today = new Date();
-  const startDate = new Date(serviceComputationDate);
-  const diffTime = Math.abs(today - startDate);
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const years = Math.floor(diffDays / 365.25);
-  let remainingDays = diffDays - years * 365.25;
-  const months = Math.floor(remainingDays / 30.44);
-  remainingDays = Math.floor(remainingDays - months * 30.44);
-  return {
-    years,
-    months,
-    days: remainingDays,
-    totalYears: diffDays / 365.25,
-    totalDays: diffDays,
-  };
-}
-
-function calculateSickLeaveServiceDuration(sickLeaveHours) {
-  if (!sickLeaveHours || sickLeaveHours <= 0) return null;
-  const totalDays = Math.floor((sickLeaveHours / 2087) * 365.25);
-  const years = Math.floor(totalDays / 365.25);
-  let remainingDays = totalDays - years * 365.25;
-  const months = Math.floor(remainingDays / 30.44);
-  remainingDays = Math.floor(remainingDays - months * 30.44);
-  return {
-    years,
-    months,
-    days: remainingDays,
-    totalYears: totalDays / 365.25,
-  };
-}
-
-const CAREER_PROGRESSION = {
-  'FS-04': { baseStep: 66574, stepIncrement: 2000, maxStep: 14, avgTimeInGrade: 2 },
-  'FS-03': { baseStep: 82160, stepIncrement: 2500, maxStep: 14, avgTimeInGrade: 3 },
-  'FS-02': { baseStep: 101395, stepIncrement: 3500, maxStep: 14, avgTimeInGrade: 4 },
-  'FS-01': { baseStep: 125133, stepIncrement: 4000, maxStep: 14, avgTimeInGrade: 5 },
-  SFS: { baseStep: 172500, stepIncrement: 2500, maxStep: 14, avgTimeInGrade: null },
-};
-
-function simulateCareerProgression(currentGrade, currentStep, yearsService) {
-  const grades = ['FS-04', 'FS-03', 'FS-02', 'FS-01', 'SFS'];
-  let totalEarnings = 0,
-    yearsInService = 0;
-  let currentGradeIndex = grades.indexOf(currentGrade);
-  if (currentGradeIndex === -1) currentGradeIndex = 0;
-  let expectedYearsToPosition = 0;
-  for (let i = 0; i < currentGradeIndex; i++) {
-    expectedYearsToPosition += CAREER_PROGRESSION[grades[i]].avgTimeInGrade;
-  }
-  const progressionRate = expectedYearsToPosition
-    ? Math.min(yearsService / expectedYearsToPosition, 2)
-    : 1;
-  const simulatedYears = Math.min(yearsService, 40);
-  let currentSimStep = 1,
-    currentSimGrade = 'FS-04';
-  for (let y = 0; y < simulatedYears; y++) {
-    const info = CAREER_PROGRESSION[currentSimGrade];
-    const yearSalary = info.baseStep + (currentSimStep - 1) * info.stepIncrement;
-    totalEarnings += yearSalary;
-    yearsInService++;
-    currentSimStep++;
-    if (currentSimStep > info.maxStep && currentSimGrade !== 'SFS') {
-      const nextIdx = grades.indexOf(currentSimGrade) + 1;
-      if (nextIdx < grades.length) {
-        currentSimGrade = grades[nextIdx];
-        currentSimStep = 1;
-      }
-    }
-  }
-  return {
-    averageAnnualSalary: totalEarnings / yearsInService,
-    yearsInService,
-    finalGrade: currentGrade,
-    finalStep: currentStep,
-  };
-}
-
-function calculateEnhancedSupplemental(
-  currentGrade,
-  currentStep,
-  yearsService,
-  age
-) {
-  if (age >= 62) return 0;
-  const gradeInfo = CAREER_PROGRESSION[currentGrade];
-  if (!gradeInfo) return 0;
-  const currentBaseSalary = gradeInfo.baseStep + (currentStep - 1) * gradeInfo.stepIncrement;
-  const careerSimulation = simulateCareerProgression(currentGrade, currentStep, yearsService);
-  const averageIndexedEarnings = careerSimulation.averageAnnualSalary;
-  const supplementalPercentage = Math.min(yearsService / 30, 1);
-  const supplementalBase = averageIndexedEarnings * 0.4;
-  const annualSupplemental = supplementalBase * supplementalPercentage;
-  const monthlySupplemental = annualSupplemental / 12;
-  const maxMonthlyBenefit = 3627;
-  return Math.min(monthlySupplemental, maxMonthlyBenefit);
-}
-
-function getMRA(currentAge) {
-  const currentYear = new Date().getFullYear();
-  const birthYear = currentYear - currentAge;
-  if (birthYear <= 1947) return 55;
-  if (birthYear >= 1970) return 57;
-  const yearsSince1947 = birthYear - 1947;
-  return 55 + (yearsSince1947 * 2) / 12;
-}
-
-function calculateScenario(
-  highThreeAverage,
-  yearsService,
-  age,
-  type,
-  isInvoluntary = false,
-  teraEligible = false,
-  teraYearsRequired = 10,
-  teraAgeRequired = 43,
-  sickLeaveDuration = null,
-  serviceDuration = null
-) {
-  function roundToMonths(y) {
-    const totalMonths = Math.round(y * 12);
-    return totalMonths / 12;
-  }
-  let effectiveYears = serviceDuration ? roundToMonths(serviceDuration.totalYears) : roundToMonths(yearsService);
-  if ((type === 'immediate' || type === 'tera') && sickLeaveDuration) {
-    effectiveYears += roundToMonths(sickLeaveDuration.totalYears);
-  }
-  const mraAge = getMRA(age);
-  let annuityPercentage = 0,
-    description = '',
-    isEligible = false,
-    mraReduction = 0,
-    age62Comparison = null;
-  const isSenior = DOM.fsGrade.value === 'FS-01' || DOM.fsGrade.value === 'SFS';
-
-  if (type === 'immediate') {
-    if (isSenior && effectiveYears >= 5) {
-      isEligible = true;
-      description = 'Immediate retirement (Senior Grade)';
-    } else if (age >= 62 && effectiveYears >= 5) {
-      isEligible = true;
-      description = 'Immediate retirement (age 62 with 5 years)';
-    } else if ((age >= 50 && effectiveYears >= 20) || (isInvoluntary && age >= 50 && effectiveYears >= 20)) {
-      isEligible = true;
-      description = isInvoluntary
-        ? 'Immediate retirement (involuntary, age 50 with 20 years)'
-        : 'Immediate retirement (age 50 with 20 years)';
-    } else if (effectiveYears >= 25) {
-      isEligible = true;
-      description = 'Immediate retirement (25 years any age)';
-    }
-  } else if (type === 'tera') {
-    if (teraEligible && age >= teraAgeRequired && effectiveYears >= teraYearsRequired) {
-      isEligible = true;
-      description = `V/TERA retirement (age ${teraAgeRequired} with ${teraYearsRequired} years)`;
-    }
-  } else if (type === 'mra+10') {
-    if (effectiveYears >= 10) {
-      isEligible = true;
-      description = 'MRA+10 retirement';
-      if (age < mraAge) {
-        description += ` (eligible at ${mraAge})`;
-        const yearsUnder = 62 - mraAge;
-        mraReduction = 0.05 * yearsUnder;
-        age62Comparison = {
-          age: 62,
-          description: 'MRA+10 (wait until 62)',
-          annuityPercentage: effectiveYears * 0.01,
-          mraReduction: 0,
-          monthlyAnnuity: (highThreeAverage * effectiveYears * 0.01) / 12,
-          annualAnnuity: highThreeAverage * effectiveYears * 0.01,
-          yearsToWait: 62 - age,
-        };
-      } else if (age < 62) {
-        const yearsUnder = 62 - age;
-        mraReduction = 0.05 * yearsUnder;
-        description += ` with ${(mraReduction * 100).toFixed(1)}% reduction`;
-        age62Comparison = {
-          age: 62,
-          description: 'MRA+10 (wait until 62)',
-          annuityPercentage: effectiveYears * 0.01,
-          mraReduction: 0,
-          monthlyAnnuity: (highThreeAverage * effectiveYears * 0.01) / 12,
-          annualAnnuity: highThreeAverage * effectiveYears * 0.01,
-          yearsToWait: 62 - age,
-        };
-      }
-    }
-  } else if (type === 'deferred' && effectiveYears >= 5) {
-    isEligible = true;
-    description = 'Deferred retirement (payable at 62)';
-  }
-
-  let annuityPct = 0;
-  if (isEligible) {
-    if (type === 'mra+10' || (type === 'deferred' && age < 65)) {
-      annuityPct = effectiveYears * 0.01;
-    } else {
-      const first20 = Math.min(20, effectiveYears) * 0.017;
-      const over20 = Math.max(0, effectiveYears - 20) * 0.01;
-      annuityPct = first20 + over20;
-    }
-  }
-
-  const baseAnnuity = highThreeAverage * annuityPct;
-  const finalAnnuity = baseAnnuity * (1 - mraReduction);
-  const monthlyAnnuity = finalAnnuity / 12;
-  const isSupplementEligible =
-    isEligible &&
-    (type === 'immediate' || type === 'tera') &&
-    age < 62 &&
-    ((age >= 50 && effectiveYears >= 20) || effectiveYears >= 25 || (type === 'tera' && teraEligible));
-
-  let monthlySupplemental = 0,
-    supplementalAnnuity = 0;
-  if (isSupplementEligible) {
-    const cg = DOM.fsGrade.value;
-    const cs = parseInt(DOM.fsStep.value, 10);
-    monthlySupplemental = calculateEnhancedSupplemental(cg, cs, effectiveYears, age);
-    supplementalAnnuity = monthlySupplemental * 12;
-  }
-
-  return {
-    isEligible,
-    description,
-    monthlyAnnuity,
-    annualAnnuity: finalAnnuity,
-    mraAge,
-    mraReduction,
-    sickLeaveDuration,
-    serviceDuration,
-    supplementalAnnuity,
-    monthlySupplemental,
-    age62Comparison,
-    isSupplementEligible,
-  };
-}
-
-function calculateFSPSAnnuity(
-  fsGrade,
-  fsStep,
-  yearsService,
-  age,
-  highThreeYears,
-  post,
-  teraEligible,
-  teraYearsRequired,
-  teraAgeRequired,
-  sickLeaveDuration,
-  serviceDuration
-) {
-  const currentSalary = SALARY_TABLES[fsGrade].steps[parseInt(fsStep, 10) - 1];
-  const postAllowanceRate = POST_ALLOWANCES[post] / 100;
-  const adjustedSalary = currentSalary * (1 + postAllowanceRate);
-  const highThreeAverage =
-    highThreeYears.some((s) => s > 0)
-      ? highThreeYears.reduce((sum, x) => sum + x, 0) / 3
-      : adjustedSalary;
-
-  const scenarios = {
-    immediate: calculateScenario(highThreeAverage, yearsService, age, 'immediate', false, teraEligible, teraYearsRequired, teraAgeRequired, sickLeaveDuration, serviceDuration),
-    tera: calculateScenario(highThreeAverage, yearsService, age, 'tera', false, teraEligible, teraYearsRequired, teraAgeRequired, sickLeaveDuration, serviceDuration),
-    mraPlusTen: calculateScenario(highThreeAverage, yearsService, age, 'mra+10', false, teraEligible, teraYearsRequired, teraAgeRequired, sickLeaveDuration, serviceDuration),
-    deferred: calculateScenario(highThreeAverage, yearsService, age, 'deferred', false, teraEligible, teraYearsRequired, teraAgeRequired, sickLeaveDuration, serviceDuration),
-  };
-
-  const best = Object.values(scenarios).reduce((a, c) => (c.monthlyAnnuity > a.monthlyAnnuity ? c : a));
-
-  return {
-    ...best,
-    scenarios,
-    baseSalary: currentSalary,
-    postAllowanceRate,
-    adjustedSalary,
-    highThreeAverage,
-    serviceDuration,
-  };
-}
-
-function calculateSeverance(fsGrade, fsStep, yearsService, age, post, annualLeaveBalance, serviceDuration) {
-  const table = SALARY_TABLES[fsGrade];
-  const baseSalary = table.steps[parseInt(fsStep, 10) - 1];
-  const monthlyPay = baseSalary / 12;
-  const effectiveYears = serviceDuration ? serviceDuration.totalYears : yearsService;
-  let severancePay = Math.min(monthlyPay * effectiveYears, baseSalary);
-  const currentYear = new Date().getFullYear();
-  const installment = severancePay / 3;
-  const installments = [1, 2, 3].map((n) => ({
-    amount: installment,
-    date: new Date(currentYear + n, 0, 1).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-  }));
-  const hourlyRate = baseSalary / 2087;
-  const annualLeavePayout = hourlyRate * annualLeaveBalance;
-  return {
-    baseSalary,
-    monthlyPay,
-    severanceAmount: severancePay,
-    installments,
-    hourlyRate,
-    annualLeaveBalance,
-    annualLeavePayout,
-    serviceDuration,
-    yearsOfService: effectiveYears,
-  };
-}
-
-function calculateHealthInsurance(planKey, coverageType, homeState) {
-  try {
-    const rates = HEALTH_INSURANCE_RATES[planKey][coverageType];
-    const cobraMonthly = rates.cobra;
-    const acaFactor = STATE_ACA_FACTORS[homeState] || STATE_ACA_FACTORS.default;
-    const totalMonthlyPremium = cobraMonthly / 1.02;
-    const acaMonthly = Math.round(totalMonthlyPremium * acaFactor);
-    const planOption = planKey.includes('-') ? planKey.split('-')[1] : 'standard';
-    const deductible = ACA_COVERAGE_FACTORS[coverageType].deductible[planOption];
-    const outOfPocket = ACA_COVERAGE_FACTORS[coverageType].outOfPocket[planOption];
-    const cobraCost = {
-      monthly: cobraMonthly,
-      duration: 18,
-      totalCost: cobraMonthly * 18,
-    };
-    const acaEstimate = { monthly: acaMonthly, deductible, outOfPocket, totalPremiumBase: totalMonthlyPremium };
-    const recommendations = generateHealthInsuranceRecommendations(rates, cobraCost, acaEstimate, planOption);
-    return { fehb: rates, cobra: cobraCost, aca: acaEstimate, homeState, recommendations };
-  } catch (err) {
-    log('Health calc error', err);
-    return { error: err.message, fehb: {}, cobra: {}, aca: {}, recommendations: [] };
-  }
-}
-
-function generateHealthInsuranceRecommendations(fehbRates, cobraCost, acaEstimate, planOption) {
-  const recs = [];
-  recs.push(
-    cobraCost.monthly < acaEstimate.monthly
-      ? 'COBRA may be more cost-effective initially.'
-      : 'ACA marketplace plans may offer lower premiums.'
-  );
-  if (planOption === 'high') recs.push('Your high-option suggests comprehensive coverage.');
-  else recs.push('Your plan preference suggests lower premiums.');
-  recs.push('Compare plan networks.');
-  recs.push('Consider upcoming medical needs.');
-  recs.push('Check for ACA premium tax credits.');
-  return recs;
-}
-
-
-// ======== UI & Form Management ========
-
-class FormManager {
-
-   else if (step >= 11) {
-            baseSalary = SFS_RANKS['Minister Counselor'].salaries[step];
-        } else {
-            baseSalary = SFS_RANKS['Counselor'].salaries[step];
-        }
-    } else {
-        baseSalary = SALARY_TABLES[grade].steps[parseInt(step) - 1];
-  
-   else if (step >= 11) {
-                baseSalary = SFS_RANKS['Minister Counselor'].salaries[step];
-            } else {
-                baseSalary = SFS_RANKS['Counselor'].salaries[step];
-  }
-
-  static getFormData() {
-  }
+document.addEventListener('DOMContentLoaded', () => {
+    calculatorForm = document.getElementById('calculator-form');
+    if (!calculatorForm) {
+        console.error('Calculator form not found');
+        return;
     }
     
-    return {
-        fsGrade: grade,
-        fsStep: step,
-        baseSalary: baseSalary,
-        yearsService: parseInt(document.getElementById('years-service').value),
-        age: parseInt(document.getElementById('age').value),
-        currentPost: "Washington, DC", // Always use Washington, DC
-        currentPlan: document.getElementById('current-plan').value,
-        planOption: document.getElementById('plan-option').value,
-        coverageType: document.getElementById('coverage-type').value,
-        state: document.getElementById('state').value,
-        teraEligible: document.getElementById('tera-eligible').value,
-        teraYears: document.getElementById('tera-eligible').value === 'yes' ? 
-            (document.getElementById('tera-years')?.value || '10') : 
-            (document.getElementById('tera-years')?.value || '20'),
-        teraAge: document.getElementById('tera-age')?.value || '43',
-        salaryYear1: parseInt(document.getElementById('salary-year-1').value) || 0,
-        salaryYear2: parseInt(document.getElementById('salary-year-2').value) || 0,
-        salaryYear3: parseInt(document.getElementById('salary-year-3').value) || 0,
-        annualLeaveBalance: parseInt(document.getElementById('annual-leave-balance').value) || 0
-    };
-  }
-
-  static init() {
-    const f = DOM.form;
-    f.removeEventListener('submit', FormManager.onSubmit);
-    f.addEventListener('submit', FormManager.onSubmit);
-    f.removeEventListener('reset', FormManager.onReset);
-    f.addEventListener('reset', FormManager.onReset);
-  }
-
-  static onSubmit(e) {
-    e.preventDefault();
-    UIManager.clearError();
-    UIManager.showLoading();
-    try {
-      const data = FormManager.collectFormData();
-      FormValidator.validate(data);
-      const results = Calculator.calculateAll(data);
-      Calculator.updateResults(results);
-      UIManager.showResults();
-    } catch (err) {
-      ErrorHandler.handle(err, 'form submit');
-    } finally {
-      UIManager.hideLoading();
+    // Initialize form handlers
+    FormManager.init();
+    
+    // Add iOS-specific form handling
+    if (calculatorForm) {
+        calculatorForm.addEventListener('touchstart', (e) => {
+            if (e.target.tagName === 'BUTTON' && e.target.type === 'submit') {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        calculatorForm.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.activeElement.blur();
+            }
+        });
     }
-  }
+});
 
-  static onReset() {
-    UIManager.clearError();
-    document.querySelectorAll('.results-container').forEach((c) => (c.innerHTML = ''));
-  }
-
-  static collectFormData() {
-    const serviceDuration = DOM.serviceComputationDate.value
-      ? calculateServiceDuration(DOM.serviceComputationDate.value)
-      : null;
-    const yearsService = serviceDuration ? serviceDuration.totalYears : parseInt(DOM.yearsService.value, 10);
-    const sick = calculateSickLeaveServiceDuration(parseFloat(DOM.sickLeaveBalance.value) || 0);
-    return {
-      fsGrade: DOM.fsGrade.value,
-      fsStep: DOM.fsStep.value,
-      yearsService,
-      serviceDuration,
-      sickLeaveDuration: sick,
-      age: parseInt(DOM.age.value, 10),
-      currentPost: 'Washington, DC',
-      currentPlan: DOM.currentPlan.value,
-      coverageType: DOM.coverageType.value,
-      state: DOM.state.value,
-      teraEligible: DOM.teraEligible.value,
-      teraYears: DOM.teraYears.value,
-      teraAge: DOM.teraAge.value,
-      salaryYear1: parseInt(DOM.salaryYear1.value, 10) || 0,
-      salaryYear2: parseInt(DOM.salaryYear2.value, 10) || 0,
-      salaryYear3: parseInt(DOM.salaryYear3.value, 10) || 0,
-      annualLeaveBalance: parseInt(DOM.annualLeaveBalance.value, 10) || 0,
+function calculateSickLeaveServiceDuration(sickLeaveHours) {
+    if (!sickLeaveHours || sickLeaveHours <= 0) {
+        return null;
+    }
+    
+    // Convert sick leave hours to days (2087 hours = 1 year)
+    const totalDays = Math.floor((sickLeaveHours / 2087) * 365.25);
+    
+    // Calculate years, months, and days
+    const years = Math.floor(totalDays / 365.25);
+    let remainingDays = totalDays - (years * 365.25);
+    const months = Math.floor(remainingDays / 30.44); // Average days per month
+    remainingDays = Math.floor(remainingDays - (months * 30.44));
+    
+    console.log('Sick leave service duration calculated:', {
+        sickLeaveHours,
+        totalDays,
+        years,
+        months,
+        days: remainingDays
+    });
+    
+        return {
+        years,
+        months,
+        days: remainingDays,
+        totalYears: totalDays / 365.25
     };
-  }
 }
 
+function calculateServiceDuration(serviceComputationDate) {
+    if (!serviceComputationDate) {
+        console.log('No SCD provided, returning null');
+        return null;
+    }
+    
+    const today = new Date();
+    const startDate = new Date(serviceComputationDate);
+    
+    // Calculate total days between dates
+    const diffTime = Math.abs(today - startDate);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Calculate years, months, and days
+    const years = Math.floor(diffDays / 365.25); // Using 365.25 to account for leap years
+    let remainingDays = diffDays - (years * 365.25);
+    const months = Math.floor(remainingDays / 30.44); // Average days per month
+    remainingDays = Math.floor(remainingDays - (months * 30.44));
+    
+    const totalYears = diffDays / 365.25;
+    
+    console.log('Service duration calculated:', {
+        years,
+        months,
+        days: remainingDays,
+        totalDays: diffDays,
+        totalYears: totalYears.toFixed(4)
+    });
+    
+    return {
+        years,
+        months,
+        days: remainingDays,
+        totalDays: diffDays,
+        totalYears
+    };
+}
+
+// Career Progression Model Constants
+const CAREER_PROGRESSION = {
+    'FS-04': {
+        baseStep: 66574,
+        stepIncrement: 2000,
+        maxStep: 14,
+        avgTimeInGrade: 2
+    },
+    'FS-03': {
+        baseStep: 82160,
+        stepIncrement: 2500,
+        maxStep: 14,
+        avgTimeInGrade: 3
+    },
+    'FS-02': {
+        baseStep: 101395,
+        stepIncrement: 3500,
+        maxStep: 14,
+        avgTimeInGrade: 4
+    },
+    'FS-01': {
+        baseStep: 125133,
+        stepIncrement: 4000,
+        maxStep: 14,
+        avgTimeInGrade: 5
+    },
+    'SFS': {
+        baseStep: 172500,
+        stepIncrement: 2500,
+        maxStep: 14,
+        avgTimeInGrade: null  // No automatic progression
+    }
+};
+
+// Function to simulate career progression and calculate average salary
+function simulateCareerProgression(currentGrade, currentStep, yearsService) {
+    // Start from FS-04 Step 1 and simulate progression
+    const grades = ['FS-04', 'FS-03', 'FS-02', 'FS-01', 'SFS'];
+    let totalEarnings = 0;
+    let yearsInService = 0;
+    let currentGradeIndex = grades.indexOf(currentGrade);
+    
+    // If current grade is not found, default to FS-04
+    if (currentGradeIndex === -1) {
+        currentGradeIndex = 0;
+    }
+
+    // Calculate average time to reach current position
+    let expectedYearsToPosition = 0;
+    for (let i = 0; i < currentGradeIndex; i++) {
+        expectedYearsToPosition += CAREER_PROGRESSION[grades[i]].avgTimeInGrade;
+    }
+
+    // Adjust progression rate if actual years of service differs from expected
+    const progressionRate = expectedYearsToPosition > 0 ? 
+        Math.min(yearsService / expectedYearsToPosition, 2) : 1;
+
+    // Simulate year-by-year progression
+    let simulatedYears = Math.min(yearsService, 40); // Cap at 40 years
+    let currentSimStep = 1;
+    let currentSimGrade = 'FS-04';
+    
+    for (let year = 0; year < simulatedYears; year++) {
+        // Calculate salary for this year
+        const gradeInfo = CAREER_PROGRESSION[currentSimGrade];
+        const yearSalary = gradeInfo.baseStep + (currentSimStep - 1) * gradeInfo.stepIncrement;
+        totalEarnings += yearSalary;
+        yearsInService++;
+
+        // Progress step
+        currentSimStep++;
+        
+        // Check for promotion
+        if (currentSimStep > gradeInfo.maxStep && currentSimGrade !== 'SFS') {
+            const nextGradeIndex = grades.indexOf(currentSimGrade) + 1;
+            if (nextGradeIndex < grades.length) {
+                currentSimGrade = grades[nextGradeIndex];
+                currentSimStep = 1;
+            }
+        }
+    }
+
+    // Calculate average annual salary
+    const averageAnnualSalary = totalEarnings / yearsInService;
+    
+    return {
+        averageAnnualSalary,
+        yearsInService,
+        finalGrade: currentGrade,
+        finalStep: currentStep
+    };
+}
+
+// Calculate enhanced supplemental annuity based on career progression
+function calculateEnhancedSupplemental(currentGrade, currentStep, yearsService, age) {
+    console.log('Starting SRS calculation with:', {
+        currentGrade,
+        currentStep,
+        yearsService,
+        age
+    });
+
+    // Only calculate if eligible (under 62)
+    if (age >= 62) {
+        console.log('Not eligible for SRS: Age 62 or older');
+        return 0;
+    }
+
+    // Get base salary without locality pay for conservative estimate
+    const gradeInfo = CAREER_PROGRESSION[currentGrade];
+    if (!gradeInfo) {
+        console.warn('Grade not found in career progression:', currentGrade);
+        return 0;
+    }
+
+    // Use base salary without locality pay for career simulation
+    const currentBaseSalary = gradeInfo.baseStep + (currentStep - 1) * gradeInfo.stepIncrement;
+    console.log('Current base salary:', currentBaseSalary);
+    
+    // Simulate career progression using base pay only
+    const careerSimulation = simulateCareerProgression(currentGrade, currentStep, yearsService);
+    console.log('Career simulation result:', careerSimulation);
+    
+    // Calculate average indexed earnings (using base pay only, no locality)
+    const averageIndexedEarnings = careerSimulation.averageAnnualSalary;
+    console.log('Average indexed earnings:', averageIndexedEarnings);
+    
+    // Calculate supplemental percentage (similar to Social Security formula)
+    // Use 40% of average indexed earnings as base, adjusted by years of service
+    const supplementalPercentage = Math.min(yearsService / 30, 1); // Cap at 30 years
+    const supplementalBase = averageIndexedEarnings * 0.40; // 40% of average earnings
+    
+    // Apply service time adjustment
+    const annualSupplemental = supplementalBase * supplementalPercentage;
+    console.log('Annual supplemental before cap:', annualSupplemental);
+    
+    // Monthly amount
+    const monthlySupplemental = annualSupplemental / 12;
+    
+    // Cap at maximum Social Security benefit
+    const maxMonthlyBenefit = 3627; // 2024 maximum Social Security benefit
+    const finalMonthlyBenefit = Math.min(monthlySupplemental, maxMonthlyBenefit);
+    
+    console.log('Final SRS calculation:', {
+        supplementalPercentage,
+        supplementalBase,
+        annualSupplemental,
+        monthlySupplemental,
+        finalMonthlyBenefit,
+        maxMonthlyBenefit,
+        isCapped: monthlySupplemental > maxMonthlyBenefit
+    });
+    
+    return finalMonthlyBenefit;
+}
+
+// Calculate retirement scenario
+function calculateScenario(highThreeAverage, yearsService, currentAge, type, isInvoluntarySeparation = false, teraEligible = false, teraYearsRequired = 10, teraAgeRequired = 43, sickLeaveServiceDuration = null, serviceDuration = null) {
+    console.log('Starting scenario calculation:', {
+        type,
+        currentAge,
+        yearsService,
+        teraEligible
+    });
+
+    // Round years to nearest month
+    function roundToMonths(years) {
+        if (!years) return 0;
+        const totalMonths = Math.round(years * 12);
+        return totalMonths / 12;
+    }
+
+    // Use serviceDuration if available, otherwise use yearsService
+    let effectiveYearsService = roundToMonths(yearsService);
+
+    // Add service duration if provided
+    if (serviceDuration && serviceDuration.totalYears) {
+        effectiveYearsService = roundToMonths(serviceDuration.totalYears);
+    }
+
+    // Only add sick leave service for immediate retirement and TERA
+    if ((type === "immediate" || type === "tera") && sickLeaveServiceDuration && sickLeaveServiceDuration.totalYears) {
+        effectiveYearsService += roundToMonths(sickLeaveServiceDuration.totalYears);
+    }
+
+    let annuityPercentage = 0;
+    let description = '';
+    let isEligible = false;
+    let mraReduction = 0;
+    let age62Comparison = null;
+
+    // Get MRA for the employee's age
+    const mraAge = getMRA(currentAge);
+
+    // Get current grade
+    const fsGrade = document.getElementById('fs-grade').value;
+    const isSeniorGrade = fsGrade === 'FS-01' || fsGrade === 'SFS';
+
+    // Check eligibility without sick leave
+    if (type === "immediate") {
+        if (isSeniorGrade && effectiveYearsService >= 5) {
+            // FS-01 and SFS are always eligible for immediate retirement with 5 years service
+            isEligible = true;
+            description = "Immediate retirement (Senior Grade)";
+        } else if (currentAge >= 62 && effectiveYearsService >= 5) {
+            isEligible = true;
+            description = "Immediate retirement (age 62 with 5 years)";
+        } else if ((currentAge >= 50 && effectiveYearsService >= 20) || (isInvoluntarySeparation && currentAge >= 50 && effectiveYearsService >= 20)) {
+            isEligible = true;
+            description = isInvoluntarySeparation ? 
+                "Immediate retirement (involuntary, age 50 with 20 years)" :
+                "Immediate retirement (age 50 with 20 years)";
+        } else if (effectiveYearsService >= 25) {
+            isEligible = true;
+            description = "Immediate retirement (25 years any age)";
+        }
+    } else if (type === "tera" && teraEligible && currentAge >= teraAgeRequired && effectiveYearsService >= teraYearsRequired) {
+        isEligible = true;
+        description = `V/TERA retirement (age ${teraAgeRequired} with ${teraYearsRequired} years)`;
+    } else if (type === "mra+10") {
+        if (effectiveYearsService >= 10) {
+            isEligible = true;
+            description = "MRA+10 retirement";
+            
+            if (currentAge < mraAge) {
+                // Not yet eligible to collect, show future scenarios
+                description = `MRA+10 retirement (eligible to begin at age ${mraAge})`;
+                // Calculate reduction if starting at MRA
+                const yearsUnder62FromMRA = 62 - mraAge;
+                mraReduction = 0.05 * yearsUnder62FromMRA;
+                
+                // Create comparison for waiting until 62
+                age62Comparison = {
+                    age: 62,
+                    description: "MRA+10 (if waiting until age 62)",
+                    annuityPercentage: effectiveYearsService * 0.01,
+                    mraReduction: 0,
+                    monthlyAnnuity: (highThreeAverage * effectiveYearsService * 0.01) / 12,
+                    annualAnnuity: highThreeAverage * effectiveYearsService * 0.01,
+                    yearsToWait: 62 - currentAge
+                };
+            } else if (currentAge >= mraAge && currentAge < 62) {
+                // Currently eligible but under 62
+                const yearsUnder62 = 62 - currentAge;
+                mraReduction = 0.05 * yearsUnder62;
+                description += ` with ${(mraReduction * 100).toFixed(1)}% reduction`;
+                
+                // Create comparison for waiting until 62
+                age62Comparison = {
+                    age: 62,
+                    description: "MRA+10 (if waiting until age 62)",
+                    annuityPercentage: effectiveYearsService * 0.01,
+                    mraReduction: 0,
+                    monthlyAnnuity: (highThreeAverage * effectiveYearsService * 0.01) / 12,
+                    annualAnnuity: highThreeAverage * effectiveYearsService * 0.01,
+                    yearsToWait: 62 - currentAge
+                };
+            }
+        }
+    } else if (type === "deferred" && effectiveYearsService >= 5) {
+        isEligible = true;
+        description = "Deferred retirement (payable at 62)";
+    }
+
+    // Add sick leave description only for immediate and TERA retirement
+    let sickLeaveDescription = '';
+    if (isEligible && (type === "immediate" || type === "tera") && sickLeaveServiceDuration && sickLeaveServiceDuration.totalYears > 0) {
+        sickLeaveDescription = ` (including ${sickLeaveServiceDuration.years} years, ${sickLeaveServiceDuration.months} months, ${sickLeaveServiceDuration.days} days of sick leave)`;
+        description += sickLeaveDescription;
+    }
+
+    // Calculate base annuity percentage
+    if (isEligible) {
+        if (type === "mra+10" || (type === "deferred" && currentAge < 65)) {
+            // For MRA+10 and deferred retirement before 65: Always use 1% per year
+            annuityPercentage = effectiveYearsService * 0.01;
+        } else {
+            // For all other types and deferred at 65+: 1.7% for first 20 years, 1% for remaining years
+            const firstTwentyYears = Math.min(20, effectiveYearsService) * 0.017;
+            const yearsOver20 = Math.max(0, effectiveYearsService - 20) * 0.01;
+            annuityPercentage = firstTwentyYears + yearsOver20;
+        }
+    }
+
+    // Calculate annual and monthly amounts
+    const baseAnnuity = highThreeAverage * annuityPercentage;
+    const finalAnnuity = baseAnnuity * (1 - mraReduction);
+    const monthlyAnnuity = finalAnnuity / 12;
+
+    // Calculate supplement if eligible
+    const isEligibleForSupplement = isEligible && 
+        (type === "tera" ? 
+            // For TERA, only check TERA requirements and age < 62
+            (currentAge >= teraAgeRequired && 
+            effectiveYearsService >= teraYearsRequired && 
+            currentAge < 62) :
+            // For other types, check standard requirements
+            ((currentAge >= 50 && effectiveYearsService >= 20) || 
+            effectiveYearsService >= 25) && 
+            currentAge < 62) &&
+        (type === "immediate" || type === "tera"); // Only for immediate and TERA retirement
+
+    console.log('SRS Eligibility Check:', {
+        isEligible,
+        currentAge,
+        effectiveYearsService,
+        type,
+        teraEligible: type === "tera",
+        teraRequirements: {
+            meetsAge: currentAge >= teraAgeRequired,
+            meetsService: effectiveYearsService >= teraYearsRequired,
+            under62: currentAge < 62
+        },
+        standardRequirements: {
+            meets50_20: currentAge >= 50 && effectiveYearsService >= 20,
+            meets25: effectiveYearsService >= 25,
+            under62: currentAge < 62
+        },
+        isEligibleForSupplement,
+        validType: type === "immediate" || type === "tera"
+    });
+
+    let supplementalAnnuity = 0;
+    let monthlySupplemental = 0;
+    if (isEligibleForSupplement) {
+        // Get current grade and step from form
+        const currentGrade = document.getElementById('fs-grade').value;
+        const currentStep = parseInt(document.getElementById('fs-step').value);
+        
+        console.log('Calculating SRS with:', {
+            currentGrade,
+            currentStep,
+            effectiveYearsService,
+            currentAge,
+            type,
+            teraRequirements: {
+                ageRequired: teraAgeRequired,
+                yearsRequired: teraYearsRequired
+            }
+        });
+        
+        monthlySupplemental = calculateEnhancedSupplemental(
+            currentGrade,
+            currentStep,
+            effectiveYearsService,
+            currentAge
+        );
+        supplementalAnnuity = monthlySupplemental * 12;
+
+        console.log('SRS Calculation Results:', {
+            monthlySupplemental,
+            supplementalAnnuity
+        });
+    } else {
+        console.log('Not eligible for SRS. Reason:', {
+            isEligible,
+            type,
+            age: currentAge,
+            service: effectiveYearsService,
+            teraRequirements: {
+                ageRequired: teraAgeRequired,
+                yearsRequired: teraYearsRequired
+            }
+        });
+    }
+
+    const result = {
+        isEligible,
+        annualAnnuity: finalAnnuity || 0,
+        monthlyAnnuity: monthlyAnnuity || 0,
+        description,
+        supplementalAnnuity: supplementalAnnuity || 0,
+        monthlySupplemental: monthlySupplemental || 0,
+        mraAge,
+        mraReduction,
+        totalServiceYears: effectiveYearsService,
+        sickLeaveServiceDuration: sickLeaveServiceDuration || null,
+        serviceDuration: serviceDuration || null,
+        age62Comparison,
+        isEligibleForSupplement
+    };
+
+    console.log('Final scenario result:', result);
+    return result;
+}
+
+// Core utility functions
+const Utils = {
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+
+    throttle(func, limit) {
+        let inThrottle;
+        return function(...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    },
+
+    memoize(fn) {
+        const cache = new Map();
+        return (...args) => {
+            const key = JSON.stringify(args);
+            if (cache.has(key)) return cache.get(key);
+            const result = fn.apply(this, args);
+            cache.set(key, result);
+            return result;
+        };
+    },
+
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
+    },
+
+    validateNumber(value, min, max) {
+        const num = parseFloat(value);
+        if (isNaN(num)) return false;
+        if (min !== undefined && num < min) return false;
+        if (max !== undefined && num > max) return false;
+        return true;
+    }
+};
+
+// DOM Elements Cache
+const DOM = {
+    form: document.getElementById('calculator-form'),
+    inputs: {
+        fsGrade: document.getElementById('fs-grade'),
+        fsStep: document.getElementById('fs-step'),
+        yearsService: document.getElementById('years-service'),
+        age: document.getElementById('age'),
+        currentPost: document.getElementById('current-post'),
+        currentPlan: document.getElementById('current-plan'),
+        planOption: document.getElementById('plan-option'),
+        coverageType: document.getElementById('coverage-type'),
+        state: document.getElementById('state'),
+        teraEligible: document.getElementById('tera-eligible'),
+        teraYears: document.getElementById('tera-years'),
+        teraAge: document.getElementById('tera-age'),
+        salaryYears: [
+            document.getElementById('salary-year-1'),
+            document.getElementById('salary-year-2'),
+            document.getElementById('salary-year-3')
+        ]
+    },
+    results: {
+        severance: document.getElementById('severance-results'),
+        retirement: document.getElementById('retirement-results'),
+        health: document.getElementById('health-results')
+    },
+    loading: document.getElementById('loading'),
+    error: document.getElementById('error'),
+    uploadStatus: document.getElementById('upload-status'),
+    ratesDate: document.getElementById('rates-date')
+};
+
+// Enhanced error handling
+// Performance monitoring
+const PerformanceMonitor = {
+    marks: {},
+    start: function(label) {
+        this.marks[label] = performance.now();
+    },
+    end: function(label) {
+        if (this.marks[label]) {
+            const duration = performance.now() - this.marks[label];
+            console.log(`Performance [${label}]: ${duration.toFixed(2)}ms`);
+            delete this.marks[label];
+            return duration;
+        }
+        return 0;
+    }
+};
+
+// Error tracking
+window.addEventListener('error', function(event) {
+    // Prevent default error handling
+    event.preventDefault();
+    
+    // Get more detailed error information
+    const errorInfo = {
+        message: event.error?.message || event.message || 'Unknown error',
+        stack: event.error?.stack,
+        type: event.error?.name || 'Unknown Error',
+        context: 'Global Error Handler',
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno
+    };
+    
+    // Log the error with more context and proper formatting
+    console.error('Global error:', JSON.stringify(errorInfo, null, 2));
+    
+    // Use the ErrorHandler to handle the error
+    ErrorHandler.handleError(event.error || new Error(event.message), 'Global Error Handler');
+});
+
+// Performance monitoring
+window.addEventListener('load', function() {
+    // Report critical performance metrics
+    const paintMetrics = performance.getEntriesByType('paint');
+    const navigationMetrics = performance.getEntriesByType('navigation');
+    
+    console.log('Performance Metrics:', {
+        firstPaint: paintMetrics.find(p => p.name === 'first-paint')?.startTime,
+        firstContentfulPaint: paintMetrics.find(p => p.name === 'first-contentful-paint')?.startTime,
+        domInteractive: navigationMetrics[0]?.domInteractive,
+        domComplete: navigationMetrics[0]?.domComplete
+    });
+});
+
 class ErrorHandler {
-  static handle(error, context = '') {
-    log('Error in', context, error);
-    UIManager.showError(error.message || 'An error occurred');
-  }
+    static handleError(error, context = '') {
+        // Log the error with context
+        console.error(`Error in ${context}:`, error);
+        
+        // Format user-friendly error message
+        let userMessage = 'An error occurred. Please try again.';
+        
+        // Handle different types of errors
+        if (error instanceof ValidationError) {
+            userMessage = error.message;
+        } else if (error instanceof CalculationError) {
+            userMessage = 'Error calculating benefits. Please check your inputs.';
+        } else if (error instanceof TypeError) {
+            userMessage = 'A type error occurred. Please check your inputs.';
+        } else if (error instanceof ReferenceError) {
+            userMessage = 'A reference error occurred. Please refresh the page.';
+        } else if (error instanceof SyntaxError) {
+            userMessage = 'A syntax error occurred. Please refresh the page.';
+        }
+        
+        // Show the error to the user
+        UIManager.showError(userMessage);
+        
+        // Log additional error details
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            context: context
+        });
+    }
 }
 
 class ValidationError extends Error {
-  constructor(msg) {
-    super(msg);
-    this.name = 'ValidationError';
-  }
+    constructor(message) {
+        super(message);
+        this.name = 'ValidationError';
+    }
 }
+
 class CalculationError extends Error {
-  constructor(msg) {
-    super(msg);
-    this.name = 'CalculationError';
-  }
+    constructor(message) {
+        super(message);
+        this.name = 'CalculationError';
+    }
 }
 
-class UIManager {
-  static showLoading() {
-    if (DOM.loading) DOM.loading.style.display = 'flex';
-  }
-  static hideLoading() {
-    if (DOM.loading) DOM.loading.style.display = 'none';
-  }
-  static showError(msg) {
-    if (!DOM.error) return;
-    DOM.error.textContent = msg;
-    DOM.error.style.display = 'block';
-  }
-  static clearError() {
-    if (!DOM.error) return;
-    DOM.error.textContent = '';
-    DOM.error.style.display = 'none';
-  }
-  static showResults() {
-    document.querySelector('.results-column').style.display = 'block';
-  }
-}
-
+// Enhanced Form Validator
 class FormValidator {
-  static validate(data) {
-    const errs = [];
-    if (!data.fsGrade) errs.push('Grade required');
-    if (!data.fsStep) errs.push('Step required');
-    if (!data.yearsService) errs.push('Years of Service required');
-    if (!data.age) errs.push('Age required');
-    if (!data.currentPlan) errs.push('Plan required');
-    if (!data.coverageType) errs.push('Coverage type required');
-    if (!data.state) errs.push('Home state required');
-    if (errs.length) throw new ValidationError(errs.join(', '));
-    return true;
-  }
+    static validateFormData(formData) {
+        const errors = [];
+        
+        // Required fields validation with updated field IDs
+        const requiredFields = {
+            fsGrade: { name: 'Grade Level', element: 'fs-grade' },
+            fsStep: { name: 'Step', element: 'fs-step' },
+            yearsService: { name: 'Years of Service', element: 'years-service' },
+            age: { name: 'Current Age', element: 'age' },
+            currentPlan: { name: 'Health Insurance Plan', element: 'current-plan' },
+            coverageType: { name: 'Enrollment Type', element: 'coverage-type' },
+            state: { name: 'Home State of Record', element: 'state' }
+        };
+
+        Object.entries(requiredFields).forEach(([field, info]) => {
+            const element = document.getElementById(info.element);
+            if (!element) {
+                console.warn(`Form field element not found: ${info.element}`);
+                return; // Skip validation for non-existent elements
+            }
+            
+            const value = formData[field];
+            if (!value && value !== 0) { // Allow 0 as a valid value
+                errors.push(`${info.name} is required`);
+                this.showFieldError(element, `${info.name} is required`);
+            } else {
+                this.clearFieldError(element);
+            }
+        });
+
+        // Numeric validations
+        if (formData.yearsService) {
+            const yearsElement = document.getElementById('years-service');
+            if (formData.yearsService < 1 || formData.yearsService > 40) {
+                errors.push('Years of Service must be between 1 and 40');
+                this.showFieldError(yearsElement, 'Must be between 1 and 40 years');
+            }
+        }
+
+        if (formData.age) {
+            const ageElement = document.getElementById('age');
+            if (formData.age < 21 || formData.age > 80) {
+                errors.push('Age must be between 21 and 80');
+                this.showFieldError(ageElement, 'Must be between 21 and 80 years');
+            }
+        }
+
+        // TERA validation
+        if (formData.teraEligible === 'yes') {
+            const teraYearsElement = document.getElementById('tera-years');
+            const teraAgeElement = document.getElementById('tera-age');
+            
+            if (!formData.teraYears) {
+                errors.push('V/TERA Years is required when V/TERA is eligible');
+                this.showFieldError(teraYearsElement, 'Required for V/TERA eligibility');
+            }
+            
+            if (!formData.teraAge) {
+                errors.push('V/TERA Age is required when V/TERA is eligible');
+                this.showFieldError(teraAgeElement, 'Required for V/TERA eligibility');
+            }
+        }
+
+        if (errors.length > 0) {
+            throw new ValidationError(errors.join('\n'));
+        }
+
+        return true;
+    }
+
+    static showFieldError(element, message) {
+        try {
+            // Check if element exists before trying to access its properties
+            if (!element) {
+                console.warn(`Attempted to show error on non-existent element: ${message}`);
+                return;
+            }
+            
+            // Ensure element has classList before trying to modify it
+            if (element.classList) {
+                element.classList.add('invalid');
+                element.classList.remove('valid');
+            }
+            
+            // Get parent element safely
+            const parent = element.parentElement;
+            if (!parent) {
+                console.warn(`Element has no parent: ${element.id}`);
+                return;
+            }
+            
+            let errorDiv = parent.querySelector('.validation-message');
+            if (!errorDiv) {
+                errorDiv = document.createElement('div');
+                errorDiv.className = 'validation-message';
+                parent.appendChild(errorDiv);
+            }
+            errorDiv.textContent = message;
+        } catch (error) {
+            console.error('Error showing field error:', error);
+        }
+    }
+
+    static clearFieldError(element) {
+        try {
+            if (!element || !element.classList) {
+                return;
+            }
+            
+            element.classList.remove('invalid');
+            element.classList.add('valid');
+            
+            const parent = element.parentElement;
+            if (!parent) return;
+            
+            const errorDiv = parent.querySelector('.validation-message');
+            if (errorDiv) {
+                errorDiv.textContent = '';
+                errorDiv.classList.remove('error');
+            }
+        } catch (error) {
+            console.error('Error clearing field error:', error);
+        }
+    }
+
+    static clearAllErrors() {
+        document.querySelectorAll('.form-control').forEach(element => {
+            this.clearFieldError(element);
+        });
+    }
 }
+
+// UI Manager for handling UI updates
+const UIManager = {
+    showLoading() {
+        const loading = document.getElementById('loading');
+        if (loading) {
+            loading.style.display = 'flex';
+        }
+    },
+
+    hideLoading() {
+        const loading = document.getElementById('loading');
+        if (loading) {
+            loading.style.display = 'none';
+        }
+    },
+
+    showError(message) {
+        const error = document.getElementById('error');
+        if (error) {
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+    },
+
+    clearError() {
+        const error = document.getElementById('error');
+        if (error) {
+            error.textContent = '';
+            error.style.display = 'none';
+        }
+    },
+
+    showResults() {
+        try {
+        const resultsColumn = document.querySelector('.results-column');
+            if (!resultsColumn) {
+                console.warn('Results column not found');
+                return;
+            }
+
+            // Show the results container
+            resultsColumn.style.display = 'block';
+            resultsColumn.style.visibility = 'visible'; // Ensure visibility
+            resultsColumn.style.opacity = '1'; // Ensure opacity
+
+            // Make sure all results containers are visible
+            ['severance-results', 'retirement-results', 'health-results'].forEach(id => {
+                const container = document.getElementById(id);
+                if (container) {
+                    container.style.display = 'block';
+                    container.style.visibility = 'visible';
+                    container.style.opacity = '1';
+                }
+            });
+
+            // Ensure results are visible on mobile
+            if (window.innerWidth <= 768) {
+                resultsColumn.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            // Offline storage support
+            if ('localStorage' in window && 'serviceWorker' in navigator) {
+
+            // Store last calculation results
+            window.addEventListener('beforeunload', function() {
+                try {
+                    const formData = document.getElementById('calculator-form').elements;
+                    localStorage.setItem('lastFormData', JSON.stringify(Array.from(formData).reduce((obj, field) => {
+                        if (field.id) obj[field.id] = field.value;
+                        return obj;
+                    }, {})));
+                } catch (e) {
+                    console.warn('Unable to save form data:', e);
+                }
+            });
+
+            // Restore last calculation on load
+            window.addEventListener('load', function() {
+                try {
+                    const lastFormData = JSON.parse(localStorage.getItem('lastFormData'));
+                    if (lastFormData) {
+                        Object.entries(lastFormData).forEach(([id, value]) => {
+                            const field = document.getElementById(id);
+                            if (field) field.value = value;
+                        });
+                    }
+                } catch (e) {
+                    console.warn('Unable to restore form data:', e);
+                        }
+                    });
+            }
+
+            // Verify that we have content in at least one results container
+            const hasContent = ['severance-results', 'retirement-results', 'health-results'].some(id => {
+                const container = document.getElementById(id);
+                return container && container.innerHTML.trim() !== '';
+            });
+
+            if (!hasContent) {
+                console.warn('No results content found in containers');
+                return;
+            }
+
+            // Activate first tab if not already done
+            const firstTab = document.querySelector('.tab-button');
+            if (firstTab && !document.querySelector('.tab-button.active')) {
+                TabManager.activateTab(firstTab.id);
+            }
+
+            // Ensure the active tab content is visible
+            const activeTab = document.querySelector('.tab-button.active');
+            if (activeTab) {
+                const activeContent = document.getElementById(activeTab.getAttribute('data-tab'));
+                if (activeContent) {
+                    activeContent.style.display = 'block';
+                    activeContent.style.visibility = 'visible';
+                    activeContent.style.opacity = '1';
+                }
+            }
+
+            // Log visibility state for debugging
+            console.log('Results visibility state:', {
+                resultsColumn: resultsColumn.style.display,
+                activeTab: document.querySelector('.tab-button.active')?.id,
+                activeContent: document.querySelector('.tab-content.active')?.id
+            });
+        } catch (error) {
+            console.error('Error showing results:', error);
+        }
+    }
+};
+
+        // Define tabButtons first
+        const tabButtons = document.querySelectorAll('.tab-button');
 
 class TabManager {
-  static setupTabNavigation() {
-    DOM.tabButtons.forEach((btn) => {
-      btn.addEventListener('click', () => this.activateTab(btn.getAttribute('data-tab')));
+static activateTab(tabId) {
+try {
+    // Hide all tab contents first
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+        content.classList.remove('active');
+        content.setAttribute('aria-hidden', 'true');
     });
-    this.activateTab('severance');
-  }
-  static activateTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
-    document.querySelectorAll('.tab-button').forEach((b) => b.classList.remove('active'));
-    const btn = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
-    const content = document.getElementById(tabId);
-    if (btn && content) {
-      btn.classList.add('active');
-      content.classList.add('active');
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+        button.setAttribute('aria-selected', 'false');
+    });
+
+    // Show selected tab content
+    const selectedContent = document.getElementById(tabId);
+    const selectedButton = document.querySelector(`[data-tab="${tabId}"]`);
+
+    if (selectedContent && selectedButton) {
+        selectedContent.style.display = 'block';
+        selectedContent.classList.add('active');
+        selectedContent.setAttribute('aria-hidden', 'false');
+        
+        selectedButton.classList.add('active');
+        selectedButton.setAttribute('aria-selected', 'true');
     }
-  }
+} catch (error) {
+    console.error('Error in activateTab:', error);
+}
+}
+
+static setupTabNavigation() {
+// Add click handlers to tab buttons
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+        const tabId = button.getAttribute('data-tab');
+        this.activateTab(tabId);
+    });
+});
+
+// Show Severance tab by default
+this.showDefaultTab();
+}
+
+static showDefaultTab() {
+this.activateTab('severance');
+}
 }
 
 class AccessibilityManager {
-  static initialize() {
-    document.querySelectorAll('.form-control').forEach((ctrl) => {
-      const label = ctrl.closest('.form-group').querySelector('label');
-      if (label) ctrl.setAttribute('aria-label', label.textContent);
-    });
-  }
+    static initialize() {
+// Enhanced accessibility
+               this.setupSkipLink();
+        this.enhanceFormControls();
+        this.setupKeyboardNavigation();
+    }
+
+    static setupSkipLink() {
+        const skipLink = document.querySelector('.skip-link');
+        const mainContent = document.querySelector('main');
+        
+        skipLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            mainContent.focus();
+        });
+    }
+
+    static enhanceFormControls() {
+        // Add ARIA labels and descriptions
+        document.querySelectorAll('.form-control').forEach(control => {
+            const label = control.closest('.form-group').querySelector('label');
+            if (label) {
+                control.setAttribute('aria-label', label.textContent);
+            }
+            
+            const description = control.closest('.form-group').querySelector('.form-text');
+            if (description) {
+                const descId = `desc-${control.id}`;
+                description.id = descId;
+                control.setAttribute('aria-describedby', descId);
+            }
+        });
+    }
+
+    static setupKeyboardNavigation() {
+        // Enhanced keyboard navigation for tabs
+        const tabList = document.querySelector('.tab-buttons');
+        const tabs = tabList.querySelectorAll('.tab-button');
+        
+        tabList.setAttribute('role', 'tablist');
+        tabs.forEach(tab => {
+            tab.setAttribute('role', 'tab');
+            tab.setAttribute('tabindex', '0');
+            
+            tab.addEventListener('keydown', (e) => {
+                const targetTab = e.target;
+                const previousTab = targetTab.previousElementSibling;
+                const nextTab = targetTab.nextElementSibling;
+                
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        if (previousTab) {
+                            previousTab.focus();
+                            previousTab.click();
+                        }
+                        break;
+                    case 'ArrowRight':
+                        if (nextTab) {
+                            nextTab.focus();
+                            nextTab.click();
+                        }
+                        break;
+                }
+            });
+        });
+    }
 }
 
+// Enhanced form feedback
 class FormFeedbackManager {
-  static initialize() {
-    const inputs = DOM.form.querySelectorAll('.form-control[required]');
-    inputs.forEach((input) => {
-      input.addEventListener('input', () => {
-        if (input.checkValidity()) input.classList.add('is-valid');
-        else input.classList.add('is-invalid');
-      });
-    });
-  }
+    static initialize() {
+        try {
+            this.setupInputFeedback();
+            // Only setup progress indicator if form exists
+            const calculatorForm = document.getElementById('calculator-form');
+            if (calculatorForm) {
+                this.setupProgressIndicator();
+            }
+        } catch (error) {
+            console.error('Error initializing form feedback:', error);
+        }
+    }
+
+    static setupInputFeedback() {
+        const calculatorForm= document.getElementById('calculator-form');
+        if (!calculatorForm) return;
+
+        const requiredInputs = calculatorForm.querySelectorAll('.form-control[required]');
+        requiredInputs.forEach(input => {
+            // Add visual feedback classes
+            input.addEventListener('input', () => {
+                if (input.value) {
+                    input.classList.add('is-valid');
+                    input.classList.remove('is-invalid');
+                } else {
+                    input.classList.add('is-invalid');
+                    input.classList.remove('is-valid');
+                }
+            });
+
+            // Initial validation state
+            if (input.value) {
+                input.classList.add('is-valid');
+            }
+        });
+    }
+
+    static setupProgressIndicator() {
+        const calculatorForm= document.getElementById('calculator-form');
+        if (!calculatorForm) return;
+
+        // Create progress bar if it doesn't exist
+        let progressBar = calculatorForm.querySelector('.progress-bar');
+        if (!progressBar) {
+            progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            // Insert at the beginning of the form
+            calculatorForm.insertBefore(progressBar, calculatorForm.firstChild);
+        }
+        
+        this.updateProgress();
+        
+        // Update progress as user fills form
+        calculatorForm.addEventListener('input', () => this.updateProgress());
+    }
+
+    static updateProgress() {
+        const calculatorForm = document.getElementById('calculator-form');
+        const progressBar = calculatorForm.querySelector('.progress-bar');
+        if (!calculatorForm || !progressBar) return;
+
+        const total = calculatorForm.querySelectorAll('.form-control[required]').length;
+        const filled = calculatorForm.querySelectorAll('.form-control[required]:valid').length;
+        const progress = total > 0 ? (filled / total) * 100 : 0;
+        
+        progressBar.style.width = `${progress}%`;
+    }
 }
 
-class Calculator {
-  static calculateAll(data) {
-    const serv = calculateSeverance(
-      data.fsGrade,
-      data.fsStep,
-      data.yearsService,
-      data.age,
-      data.currentPost,
-      data.annualLeaveBalance,
-      data.serviceDuration
-    );
-    const ret = calculateFSPSAnnuity(
-      data.fsGrade,
-      data.fsStep,
-      data.yearsService,
-      data.age,
-      [data.salaryYear1, data.salaryYear2, data.salaryYear3],
-      data.currentPost,
-      data.teraEligible === 'yes',
-      parseInt(data.teraYears, 10),
-      parseInt(data.teraAge, 10),
-      data.sickLeaveDuration,
-      data.serviceDuration
-    );
-    const health = calculateHealthInsurance(data.currentPlan, data.coverageType, data.state);
-    return { serv, ret, health };
-  }
+// Calculation Manager for handling all calculations
+const CalculationManager = {
+    async calculateBenefits(formData) {
+        try {
+            // Calculate severance pay
+            const severance = calculateSeverance(
+                formData.fsGrade,
+                formData.fsStep,
+                formData.yearsService,
+                formData.age,
+                formData.currentPost,
+                formData.annualLeaveBalance,
+                formData.serviceDuration
+            );
 
-  static updateResults({ serv, ret, health }) {
-    // ... implement DOM updates as before, using formatCurrency and log where needed ...
-  }
+            // Calculate annuity
+            const annuity = calculateFSPSAnnuity(
+                formData.fsGrade,
+                formData.fsStep,
+                formData.yearsService,
+                formData.age,
+                [formData.salaryYear1, formData.salaryYear2, formData.salaryYear3],
+                formData.currentPost,
+                formData.teraEligible === 'yes',
+                parseInt(formData.teraYears),
+                parseInt(formData.teraAge),
+                formData.sickLeaveYears,
+                formData.serviceDuration
+            );
+
+            // Calculate health insurance
+            const health = calculateHealthInsurance(
+                formData.currentPlan,
+                formData.planOption,
+                formData.coverageType,
+                formData.state
+            );
+
+            return {
+                severance,
+                annuity,
+                health,
+                formData
+            };
+        } catch (error) {
+            console.error('Error calculating benefits:', error);
+            throw new CalculationError('Error calculating benefits. Please check your inputs.');
+        }
+    }
+};
+
+// Validate input function - simplified
+function validateInput(e) {
+    const input = e.target;
+    if (input.id.startsWith('salary-year-')) {
+        // For salary inputs, only validate that it's a positive number
+        const value = parseFloat(input.value);
+        if (value < 0) input.value = 0;
+        return;
+    }
+    
+    // For other numeric inputs
+    let value = input.value.replace(/[^0-9]/g, ''); // Only allow numbers
+    if (input.min) value = Math.max(input.min, value);
+    if (input.max) value = Math.min(input.max, value);
+    input.value = value;
 }
-
-
-
-
-// ======== Initialization ========
-function initializeApp() {
-  FormManager.init();
-  TabManager.setupTabNavigation();
-  populateYearsOfServiceDropdown();
-  populateHighThreeSalaryDropdowns();
-  initializeTERADropdowns();
-  AccessibilityManager.initialize();
-  FormFeedbackManager.initialize();
-  updatePlanPrices();
-}
-
-document.addEventListener('DOMContentLoaded', initializeApp);
 
 // Function to populate Years of Service dropdown
 function populateYearsOfServiceDropdown() {
@@ -1313,9 +1829,20 @@ SALARY_TABLES.SFS = {
 
 // Update getFormData function to handle SFS ranks
 
-
-// Get form data function
- else {
+static FormManager.getFormData() {
+    const serviceComputationDate = document.getElementById('service-computation-date')?.value;
+    const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
+    const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
+    
+    // Calculate years of service from SCD if available
+    let calculatedYearsService;
+    let serviceDuration = null;
+    
+    if (serviceComputationDate) {
+        serviceDuration = calculateServiceDuration(serviceComputationDate);
+        calculatedYearsService = serviceDuration ? serviceDuration.totalYears : yearsServiceInput;
+        console.log('Using service duration calculated from SCD:', calculatedYearsService);
+            } else {
         calculatedYearsService = yearsServiceInput;
         console.log('Using manually entered years of service:', calculatedYearsService);
     }
@@ -1544,7 +2071,20 @@ class Calculator {
         }
     }
 
-     else {
+    static FormManager.getFormData() {
+        const serviceComputationDate = document.getElementById('service-computation-date')?.value;
+        const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
+        const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
+        
+        // Calculate years of service from SCD if available
+        let calculatedYearsService;
+        let serviceDuration = null;
+        
+        if (serviceComputationDate) {
+            serviceDuration = calculateServiceDuration(serviceComputationDate);
+            calculatedYearsService = serviceDuration ? serviceDuration.totalYears : yearsServiceInput;
+            console.log('Using service duration calculated from SCD:', calculatedYearsService);
+        } else {
             calculatedYearsService = yearsServiceInput;
             console.log('Using manually entered years of service:', calculatedYearsService);
         }
