@@ -1311,10 +1311,6 @@ function getFormData() {
     };
 }
 
-// Replace with a single, comprehensive handler:
-
-}
-
 // Get form data function
 static getFormData() {
     const serviceComputationDate = document.getElementById('service-computation-date')?.value;
