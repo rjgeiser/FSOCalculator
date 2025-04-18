@@ -1309,7 +1309,6 @@ function getFormData() {
         salaryYear3: parseInt(document.getElementById('salary-year-3').value) || 0,
         annualLeaveBalance: parseInt(document.getElementById('annual-leave-balance').value) || 0
     };
-}
 
 // Get form data function
 static getFormData() {
