@@ -1,0 +1,59 @@
+{
+    "name": "FSO Benefits Calculator",
+    "short_name": "FSO Calc",
+    "description": "Calculate Foreign Service Officer separation benefits",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#2c5282",
+    "orientation": "portrait",
+    "icons": [
+      {
+        "src": "img/icon-32.png",
+        "sizes": "32x32",
+        "type": "image/png",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "img/icon-64.png",
+        "sizes": "64x64",
+        "type": "image/png",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "img/icon-128.png",
+        "sizes": "128x128",
+        "type": "image/png",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "img/icon-192.png",
+        "sizes": "192x192",
+        "type": "image/png",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "img/icon-256.png",
+        "sizes": "256x256",
+        "type": "image/png",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "img/icon-512.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any maskable"
+      }
+    ],
+    "prefer_related_applications": false,
+    "categories": ["utilities", "finance"],
+    "shortcuts": [
+      {
+        "name": "Calculate Benefits",
+        "short_name": "Calculate",
+        "description": "Start a new benefits calculation",
+        "url": "/",
+        "icons": [{ "src": "img/icon-192.png", "sizes": "192x192" }]
+      }
+    ]
+  } 
