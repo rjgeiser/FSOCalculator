@@ -1315,7 +1315,7 @@ SALARY_TABLES.SFS = {
 
 
 // Get form data function
-static FormManager.getFormData() {
+static getFormData() {
     const serviceComputationDate = document.getElementById('service-computation-date')?.value;
     const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
     const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
@@ -1557,7 +1557,7 @@ class Calculator {
         }
     }
 
-    static FormManager.getFormData() {
+    static getFormData() {
         const serviceComputationDate = document.getElementById('service-computation-date')?.value;
         const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
         const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
