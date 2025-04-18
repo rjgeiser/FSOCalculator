@@ -453,6 +453,8 @@ class FormManager {
                 baseSalary = SFS_RANKS['Counselor'].salaries[step];
   }
 
+  static getFormData() {
+  }
     }
     
     return {
