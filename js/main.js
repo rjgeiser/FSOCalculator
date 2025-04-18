@@ -438,6 +438,48 @@ function generateHealthInsuranceRecommendations(fehbRates, cobraCost, acaEstimat
 // ======== UI & Form Management ========
 
 class FormManager {
+
+  static getFormData() {
+const grade = document.getElementById('fs-grade').value;
+    const step = document.getElementById('fs-step').value;
+    
+    // Get the actual salary based on grade and step
+    let baseSalary;
+    if (grade === 'SFS') {
+        if (step == 14) {
+            baseSalary = SFS_RANKS['Career Minister'].salary;
+        } else if (step >= 11) {
+            baseSalary = SFS_RANKS['Minister Counselor'].salaries[step];
+        } else {
+            baseSalary = SFS_RANKS['Counselor'].salaries[step];
+        }
+    } else {
+        baseSalary = SALARY_TABLES[grade].steps[parseInt(step) - 1];
+    }
+    
+    return {
+        fsGrade: grade,
+        fsStep: step,
+        baseSalary: baseSalary,
+        yearsService: parseInt(document.getElementById('years-service').value),
+        age: parseInt(document.getElementById('age').value),
+        currentPost: "Washington, DC", // Always use Washington, DC
+        currentPlan: document.getElementById('current-plan').value,
+        planOption: document.getElementById('plan-option').value,
+        coverageType: document.getElementById('coverage-type').value,
+        state: document.getElementById('state').value,
+        teraEligible: document.getElementById('tera-eligible').value,
+        teraYears: document.getElementById('tera-eligible').value === 'yes' ? 
+            (document.getElementById('tera-years')?.value || '10') : 
+            (document.getElementById('tera-years')?.value || '20'),
+        teraAge: document.getElementById('tera-age')?.value || '43',
+        salaryYear1: parseInt(document.getElementById('salary-year-1').value) || 0,
+        salaryYear2: parseInt(document.getElementById('salary-year-2').value) || 0,
+        salaryYear3: parseInt(document.getElementById('salary-year-3').value) || 0,
+        annualLeaveBalance: parseInt(document.getElementById('annual-leave-balance').value) || 0
+    };
+  }
+
   static init() {
     const f = DOM.form;
     f.removeEventListener('submit', FormManager.onSubmit);
@@ -1270,46 +1312,7 @@ SALARY_TABLES.SFS = {
 };
 
 // Update getFormData function to handle SFS ranks
-function FormManager.getFormData() {
-    const grade = document.getElementById('fs-grade').value;
-    const step = document.getElementById('fs-step').value;
-    
-    // Get the actual salary based on grade and step
-    let baseSalary;
-    if (grade === 'SFS') {
-        if (step == 14) {
-            baseSalary = SFS_RANKS['Career Minister'].salary;
-        } else if (step >= 11) {
-            baseSalary = SFS_RANKS['Minister Counselor'].salaries[step];
-        } else {
-            baseSalary = SFS_RANKS['Counselor'].salaries[step];
-        }
-    } else {
-        baseSalary = SALARY_TABLES[grade].steps[parseInt(step) - 1];
-    }
-    
-    return {
-        fsGrade: grade,
-        fsStep: step,
-        baseSalary: baseSalary,
-        yearsService: parseInt(document.getElementById('years-service').value),
-        age: parseInt(document.getElementById('age').value),
-        currentPost: "Washington, DC", // Always use Washington, DC
-        currentPlan: document.getElementById('current-plan').value,
-        planOption: document.getElementById('plan-option').value,
-        coverageType: document.getElementById('coverage-type').value,
-        state: document.getElementById('state').value,
-        teraEligible: document.getElementById('tera-eligible').value,
-        teraYears: document.getElementById('tera-eligible').value === 'yes' ? 
-            (document.getElementById('tera-years')?.value || '10') : 
-            (document.getElementById('tera-years')?.value || '20'),
-        teraAge: document.getElementById('tera-age')?.value || '43',
-        salaryYear1: parseInt(document.getElementById('salary-year-1').value) || 0,
-        salaryYear2: parseInt(document.getElementById('salary-year-2').value) || 0,
-        salaryYear3: parseInt(document.getElementById('salary-year-3').value) || 0,
-        annualLeaveBalance: parseInt(document.getElementById('annual-leave-balance').value) || 0
-    };
-}
+
 
 // Get form data function
 static FormManager.getFormData() {
