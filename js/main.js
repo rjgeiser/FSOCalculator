@@ -3092,7 +3092,15 @@ function updateLifetimeReport(retirement, formData) {
 
   for (const [key, data] of Object.entries(retirement)) {
     const label = labelMap[key] || key;
-    const annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;
+    let annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;
+    
+    if (annual === 0) {
+      const high3 = parseFloat(formData.salaryYear1 || 0) + parseFloat(formData.salaryYear2 || 0) + parseFloat(formData.salaryYear3 || 0);
+      const average = high3 / 3;
+      const multiplier = (key === "immediate") ? 0.017 : 0.01;
+      const serviceYears = parseFloat(formData.yearsService || 0);
+      annual = Math.round(average * serviceYears * multiplier);
+    }
     const startAge = parseInt(data.startingAge, 10) || currentAge;
     const years = Math.max(0, maxAge - startAge);
     const total = Math.round(annual * years);
@@ -3101,7 +3109,7 @@ function updateLifetimeReport(retirement, formData) {
 
     const reasonList = eligibilityRules[key]?.(currentAge, service, grade) || [];
 
-    const explicitlyEligible = data.isEligible === true;
+    const explicitlyEligible = data.eligible === true || data.isEligible === true;
     const deferredFlag = key === "mraPlusTen" && data.description?.includes("eligible to begin at age");
     const showAsEligible = explicitlyEligible || deferredFlag;
 
