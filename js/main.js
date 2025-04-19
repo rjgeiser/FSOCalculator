@@ -2747,31 +2747,6 @@ if (document.readyState === 'loading') {
     initializeAfterLoad();
 }
 
-// Initialize health insurance form elements
-document.addEventListener('DOMContentLoaded', function() {
-    try {
-    const planSelect = document.getElementById('current-plan');
-    const coverageTypeSelect = document.getElementById('coverage-type');
-    
-    if (planSelect && coverageTypeSelect) {
-        coverageTypeSelect.disabled = !planSelect.value;
-        planSelect.addEventListener('change', function() {
-        updatePlanPrices();
-        coverageTypeSelect.disabled = !this.value;
-        });
-        coverageTypeSelect.addEventListener('change', updatePlanPrices);
-        updatePlanPrices();
-    } else {
-        console.warn('Health insurance form elements not found:', {
-        planSelect: !!planSelect,
-        coverageTypeSelect: !!coverageTypeSelect
-        });
-    }
-    } catch (error) {
-    console.warn('Error initializing health insurance form elements:', error);
-    }
-});
-
 // Additional optional inputs handling
     document.addEventListener('DOMContentLoaded', function() {
         const serviceComputationDateInput = document.getElementById('service-computation-date');
@@ -2821,40 +2796,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     annualLeavePayoutSummary.innerHTML = `Annual Leave Payout: $${payout}`;
                 });
             }
-        }
-    });
-
-    // Initialize form elements with proper timing
-    document.addEventListener('DOMContentLoaded', function() {
-        try {
-            // Log the initialization attempt
-            console.log('Initializing health insurance form elements...');
-            
-            const planSelect = document.getElementById('current-plan');
-            const coverageTypeSelect = document.getElementById('coverage-type');
-            
-            // Log element status
-            console.log('Form elements initialization status:', {
-                'current-plan': planSelect ? 'found' : 'missing',
-                'coverage-type': coverageTypeSelect ? 'found' : 'missing'
-            });
-
-            if (planSelect && coverageTypeSelect) {
-                coverageTypeSelect.disabled = !planSelect.value;
-                planSelect.addEventListener('change', function() {
-                    updatePlanPrices();
-                    coverageTypeSelect.disabled = !this.value;
-                });
-                coverageTypeSelect.addEventListener('change', updatePlanPrices);
-                updatePlanPrices();
-            } else {
-                console.warn('Health insurance form elements not found during initialization:', {
-                    planSelect: !!planSelect,
-                    coverageTypeSelect: !!coverageTypeSelect
-                });
-            }
-        } catch (error) {
-            console.warn('Error initializing health insurance form elements:', error);
         }
     });
 
