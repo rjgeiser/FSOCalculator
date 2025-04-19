@@ -597,7 +597,8 @@ const DOM = {
     results: {
         severance: document.getElementById('severance-results'),
         retirement: document.getElementById('retirement-results'),
-        health: document.getElementById('health-results')
+        health: document.getElementById('health-results'),
+        report: document.getElementById('lieftime-results')
     },
     loading: document.getElementById('loading'),
     error: document.getElementById('error'),
@@ -888,7 +889,7 @@ const UIManager = {
             resultsColumn.style.opacity = '1'; // Ensure opacity
 
             // Make sure all results containers are visible
-            ['severance-results', 'retirement-results', 'health-results'].forEach(id => {
+            ['severance-results', 'retirement-results', 'health-results'. 'lifetime-results'].forEach(id => {
                 const container = document.getElementById(id);
                 if (container) {
                     container.style.display = 'block';
@@ -935,7 +936,7 @@ const UIManager = {
             }
 
             // Verify that we have content in at least one results container
-            const hasContent = ['severance-results', 'retirement-results', 'health-results'].some(id => {
+            const hasContent = ['severance-results', 'retirement-results', 'health-results', 'lifetime-results'].some(id => {
                 const container = document.getElementById(id);
                 return container && container.innerHTML.trim() !== '';
             });
