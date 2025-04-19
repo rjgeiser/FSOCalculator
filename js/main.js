@@ -3101,6 +3101,9 @@ function updateLifetimeReport(retirement, formData) {
     }
   };
 
+    // ✅ Define `annual` before using it
+    let annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;
+    
     if (annual === 0) {
       const s1 = parseFloat(formData.salaryYear1 || 0);
       const s2 = parseFloat(formData.salaryYear2 || 0);
