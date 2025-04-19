@@ -3091,43 +3091,47 @@ function updateLifetimeReport(retirement, formData) {
   };
 
   for (const [key, data] of Object.entries(retirement)) {
-    const label = labelMap[key] || key;  
-    let annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;  
-        if (annual === 0) {
-          const s1 = parseFloat(formData.salaryYear1 || 0);
-          const s2 = parseFloat(formData.salaryYear2 || 0);
-          const s3 = parseFloat(formData.salaryYear3 || 0);
-          const average = (s1 + s2 + s3) / 3;
-        
-          const multiplier = (key === "immediate") ? 0.017 : 0.01;
-          const years = parseFloat(formData.yearsService || 0);
-          annual = Math.round(average * years * multiplier);
-        }
+    const label = labelMap[key] || key;
+    let annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;
+
     const startAge = parseInt(data.startingAge, 10) || currentAge;
     const years = Math.max(0, maxAge - startAge);
-    const total = Math.round(annual * years);
-    const assumptions = `$${annual.toLocaleString()}/yr × ${years} years starting at age ${startAge}`;
-    const row = `<tr><td>${label}</td><td>$${total.toLocaleString()}</td></tr>`;
-
     const reasonList = eligibilityRules[key]?.(currentAge, service, grade) || [];
 
     const explicitlyEligible = data.eligible === true || data.isEligible === true;
     const deferredFlag = key === "mraPlusTen" && data.description?.includes("eligible to begin at age");
     const showAsEligible = explicitlyEligible || deferredFlag;
 
+    // ⬇️ Fallback annuity ONLY if not eligible and no annuity present
+    if (!showAsEligible && annual === 0) {
+      const s1 = parseFloat(formData.salaryYear1 || 0);
+      const s2 = parseFloat(formData.salaryYear2 || 0);
+      const s3 = parseFloat(formData.salaryYear3 || 0);
+      const average = (s1 + s2 + s3) / 3;
+
+      let multiplier = 0.01;
+      if (key === "immediate") multiplier = 0.017;
+      else if (key === "tera") multiplier = 0.015;
+
+      annual = Math.round(average * service * multiplier);
+    }
+
+    const total = Math.round(annual * years);
+    const assumptions = `$${annual.toLocaleString()}/yr × ${years} years starting at age ${startAge}`;
+    const row = `<tr><td>${label}</td><td>$${total.toLocaleString()}</td></tr>`;
+
     if (showAsEligible) {
       tbodyEligible.push(row);
       notesEligible.push(`<strong>${label}:</strong> ${assumptions}`);
     } else {
-      tbodyIneligible.push(row);
       const reasons = reasonList.length
         ? `Ineligible because ${reasonList.join(", ")}`
         : "Ineligible (missing data)";
       notesIneligible.push(`<strong>${label}:</strong> ${reasons} — but would be ${assumptions}`);
+      tbodyIneligible.push(row);
     }
   }
 
-  // Add Severance if applicable
   if (window.calculatorResults?.severance?.grossSeverance) {
     const severance = window.calculatorResults.severance.grossSeverance;
     tbodyEligible.unshift(`<tr><td>Severance</td><td>$${severance.toLocaleString()}</td></tr>`);
