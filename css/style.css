@@ -1752,3 +1752,24 @@ footer a:hover {
 .dark-mode .option-details li:before {
   color: #90cdf4;
 }
+
+/* Dark Mode Toggle Button */
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  background-color: #2b6cb0;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  border: none;
+  transition: background-color 0.3s;
+}
+
+.theme-toggle:hover {
+  background-color: #3182ce;
+}
