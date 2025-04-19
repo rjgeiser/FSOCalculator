@@ -3043,9 +3043,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateLifetimeReport(retirement, formData) {
   console.log("🧾 Running updateLifetimeReport");
-  console.log("📋 formData:", formData);
-  console.log("📦 retirement data:", retirement);
-
   const reportContainer = document.getElementById('lifetime-results');
   if (!reportContainer || !retirement) return;
 
@@ -3073,7 +3070,7 @@ function updateLifetimeReport(retirement, formData) {
       const reasons = [];
       if (age < 50) reasons.push("must be at least 50 years old");
       if (service < 20) reasons.push("requires 20+ years of service");
-      if (!/^FS-0[1-3]$/.test(grade)) reasons.push("requires grade FS-01 or higher");
+      if (!/^FS-0[1-3]$|^SFS$/.test(grade)) reasons.push("requires grade FS-01 or higher");
       return reasons;
     },
     tera: (age, service) => {
@@ -3099,26 +3096,21 @@ function updateLifetimeReport(retirement, formData) {
     const startAge = parseInt(data.startingAge, 10) || currentAge;
     const years = Math.max(0, maxAge - startAge);
     const total = Math.round(annual * years);
-
     const assumptions = `$${annual.toLocaleString()}/yr × ${years} years starting at age ${startAge}`;
-    const row = `
-      <tr>
-        <td>${label}</td>
-        <td>$${total.toLocaleString()}</td>
-      </tr>
-    `;
 
+    const row = `<tr><td>${label}</td><td>$${total.toLocaleString()}</td></tr>`;
     const reasonList = eligibilityRules[key]?.(currentAge, service, grade) || [];
-    
-    const isActuallyEligible = annual > 0 && reasonList.length === 0;
-    const isActuallyIneligible = !isActuallyEligible;
 
-    if (isActuallyEligible) {
+    const explicitlyEligible = data.isEligible === true;
+    const isMRAPlusTen = key === "mraPlusTen";
+    const showAsEligible =
+      explicitlyEligible ||
+      (isMRAPlusTen && data.description?.includes("eligible to begin at age"));
+
+    if (showAsEligible) {
       tbodyEligible.push(row);
       notesEligible.push(`<strong>${label}:</strong> ${assumptions}`);
-    }
-
-    if (isActuallyIneligible) {
+    } else {
       tbodyIneligible.push(row);
       const reasons = reasonList.length
         ? `Ineligible because ${reasonList.join(", ")}`
@@ -3128,44 +3120,37 @@ function updateLifetimeReport(retirement, formData) {
   }
 
   // Add Severance if present
-  if (
-    window.calculatorResults?.severance?.grossSeverance &&
-    typeof window.calculatorResults.severance.grossSeverance === "number"
-  ) {
+  if (window.calculatorResults?.severance?.grossSeverance) {
     const severance = window.calculatorResults.severance.grossSeverance;
-    tbodyEligible.unshift(`
-      <tr>
-        <td>Severance</td>
-        <td>$${severance.toLocaleString()}</td>
-      </tr>
-    `);
+    tbodyEligible.unshift(`<tr><td>Severance</td><td>$${severance.toLocaleString()}</td></tr>`);
     notesEligible.unshift(`<strong>Severance:</strong> One-time payment of $${severance.toLocaleString()}`);
   }
 
   reportContainer.innerHTML = `
     <div class="form-section">
       <h3>Eligible Retirement Options</h3>
-        <div class="comparison-table">
-          <table>
-            <thead><tr><th>Type</th><th>Total Value</th></tr></thead>
-            <tbody>${tbodyEligible.join('')}</tbody>
-          </table>
-        </div>
-        <div class="form-text">
-          <strong>Assumptions:</strong><br>${notesEligible.join('<br>')}
-        </div>
-       
-        <h3>Ineligible Options (for Comparison Only)</h3>
-        <div class="comparison-table">
-          <table>
-            <thead><tr><th>Type</th><th>Total Value</th></tr></thead>
-            <tbody>${tbodyIneligible.join('')}</tbody>
-          </table>
-        </div>
-        <div class="form-text">
-          <strong>Reasons for Ineligibility and Assumptions:</strong><br>${notesIneligible.join('<br>')}
+      <div class="comparison-table">
+        <table>
+          <thead><tr><th>Type</th><th>Total Value</th></tr></thead>
+          <tbody>${tbodyEligible.join('')}</tbody>
+        </table>
+          <div class="form-text">
+            <strong>Assumptions:</strong><br>${notesEligible.join('<br>')}
         </div>
       </div>
+
+      <h3>Ineligible Options (for Comparison Only)</h3>
+      <div class="comparison-table">
+        <table>
+          <thead><tr><th>Type</th><th>Total Value</th></tr></thead>
+          <tbody>${tbodyIneligible.join('')}</tbody>
+        </table>
+          <div class="form-text">
+            <strong>Reasons for Ineligibility and Assumptions:</strong><br>${notesIneligible.join('<br>')}
+        </div>
+      </div>
+    </div>
   `;
 }
+
 
