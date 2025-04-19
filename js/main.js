@@ -298,7 +298,7 @@ function calculateScenario(highThreeAverage, yearsService, currentAge, type, isI
     // Get MRA for the employee's age
     const mraAgeRaw = getMRA(currentAge);
     const mraAge = Math.min(mraAgeRaw, 57); // cap per FSPS
-    const formatMRA(getMRA(formData.age)) = formatMRA(mraAgeRaw); // use raw for display, but capped for logic
+    const mraDisplay = formatMRA(mraAgeRaw); // use raw for display, but capped for logic
 
 
     // Get current grade
