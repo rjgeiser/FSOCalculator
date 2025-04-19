@@ -3042,7 +3042,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //});
 
 function updateLifetimeReport(retirement, formData) {
-  const reportContainer = document.getElementById('report-tab');
+  const reportContainer = document.getElementById('lifetime-results');
   if (!reportContainer || !retirement) return;
 
   const maxAge = 85;
