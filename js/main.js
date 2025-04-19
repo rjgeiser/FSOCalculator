@@ -3101,21 +3101,22 @@ function updateLifetimeReport(retirement, formData) {
     }
   };
 
-    // ✅ Define `annual` before using it
+  for (const [key, data] of Object.entries(retirement)) {
+    const label = labelMap[key] || key;
     let annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;
-    
+
     if (annual === 0) {
       const s1 = parseFloat(formData.salaryYear1 || 0);
       const s2 = parseFloat(formData.salaryYear2 || 0);
       const s3 = parseFloat(formData.salaryYear3 || 0);
       let average = (s1 + s2 + s3) / 3;
-    
+
       // If salary years are missing, estimate from grade/step
       if (average === 0 && typeof lookupBaseSalary === "function") {
         const base = lookupBaseSalary(formData.fsGrade, formData.fsStep);
-        average = base || 80000; // Use safe fallback if still undefined
+        average = base || 80000;
       }
-    
+
       const multiplierMap = {
         immediate: 0.017,
         tera: 0.017,
@@ -3124,7 +3125,7 @@ function updateLifetimeReport(retirement, formData) {
       };
       const multiplier = multiplierMap[key] || 0.01;
       const years = parseFloat(formData.yearsService || 0);
-    
+
       annual = Math.round(average * years * multiplier);
       console.log(`🔁 Recalculated ${label} annuity for ineligible scenario: $${annual}`);
     }
@@ -3151,6 +3152,7 @@ function updateLifetimeReport(retirement, formData) {
         : "Ineligible (missing data)";
       notesIneligible.push(`<strong>${label}:</strong> ${reasons} — but would be ${assumptions}`);
     }
+  }
 
   // Add Severance if applicable
   if (window.calculatorResults?.severance?.grossSeverance) {
@@ -3159,6 +3161,7 @@ function updateLifetimeReport(retirement, formData) {
     notesEligible.unshift(`<strong>Severance:</strong> One-time payment of $${severance.toLocaleString()}`);
   }
 
+  // 👇 Render results (if your code includes it)
   reportContainer.innerHTML = `
     <div class="form-section">
       <h3>Eligible Retirement Options</h3>
