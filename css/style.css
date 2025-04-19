@@ -1686,24 +1686,50 @@ footer a:hover {
         margin-bottom: 2rem;
     }
 }
-
-/* Dark Mode Toggle Button */
-.theme-toggle {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 1000;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  background-color: #2b6cb0;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  border: none;
-  transition: background-color 0.3s;
+/* ----- DARK MODE OVERRIDES BELOW ----- */
+/* Supplemental Dark Mode Coverage for Missed Elements */
+.dark-mode .form-container,
+.dark-mode .results-container,
+.dark-mode .results-column,
+.dark-mode .tab-content,
+.dark-mode .option-card,
+.dark-mode .retirement-summary,
+.dark-mode .retirement-options,
+.dark-mode .retirement-notes,
+.dark-mode .disclaimer {
+  background-color: #2d3748;
+  color: #e2e8f0;
+  border-color: #4a5568;
 }
-
-.theme-toggle:hover {
-  background-color: #3182ce;
+.dark-mode .comparison-table td,
+.dark-mode .comparison-table th,
+.dark-mode .tab-content h4,
+.dark-mode .validation-message,
+.dark-mode .option-details li,
+.dark-mode .form-text,
+.dark-mode .tab-button.active,
+.dark-mode .header p,
+.dark-mode .progress-step-label,
+.dark-mode .tooltip .tooltip-text,
+.dark-mode .citation {
+  color: #e2e8f0;
+}
+.dark-mode .btn-outline-secondary,
+.dark-mode .btn-outline-secondary:hover {
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+.dark-mode input,
+.dark-mode textarea,
+.dark-mode select {
+  background-color: #2d3748;
+  color: #e2e8f0;
+  border-color: #4a5568;
+}
+.dark-mode .tab-content.active,
+.dark-mode .option-card h6,
+.dark-mode .retirement-notes h5,
+.dark-mode .retirement-notes li:before,
+.dark-mode .option-details li:before {
+  color: #90cdf4;
 }
