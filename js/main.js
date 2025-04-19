@@ -1829,51 +1829,6 @@ SALARY_TABLES.SFS = {
 
 // Update getFormData function to handle SFS ranks
 
-static getFormData() {
-    const serviceComputationDate = document.getElementById('service-computation-date')?.value;
-    const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
-    const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
-    
-    // Calculate years of service from SCD if available
-    let calculatedYearsService;
-    let serviceDuration = null;
-    
-    if (serviceComputationDate) {
-        serviceDuration = calculateServiceDuration(serviceComputationDate);
-        calculatedYearsService = serviceDuration ? serviceDuration.totalYears : yearsServiceInput;
-        console.log('Using service duration calculated from SCD:', calculatedYearsService);
-            } else {
-        calculatedYearsService = yearsServiceInput;
-        console.log('Using manually entered years of service:', calculatedYearsService);
-    }
-
-    // Calculate additional service time from sick leave (2087 hours = 1 year)
-    const sickLeaveYears = sickLeaveBalance / 2087;
-    console.log('Additional years from sick leave:', sickLeaveYears);
-
-    return {
-        fsGrade: document.getElementById('fs-grade')?.value || '',
-        fsStep: document.getElementById('fs-step')?.value || '',
-        yearsService: calculatedYearsService,
-        sickLeaveYears: sickLeaveYears,
-        serviceComputationDate: serviceComputationDate,
-        serviceDuration: serviceDuration,
-        age: parseInt(document.getElementById('age')?.value) || 0,
-        currentPost: "Washington, DC", // Always use Washington, DC
-        currentPlan: document.getElementById('current-plan')?.value || '',
-        coverageType: document.getElementById('coverage-type')?.value || '',
-        state: document.getElementById('state')?.value || '',
-        teraEligible: document.getElementById('tera-eligible')?.value || 'no',
-        teraYears: document.getElementById('tera-years')?.value || '10',
-        teraAge: document.getElementById('tera-age')?.value || '43',
-        salaryYears: [
-            parseInt(document.getElementById('salary-year-1')?.value) || 0,
-            parseInt(document.getElementById('salary-year-2')?.value) || 0,
-            parseInt(document.getElementById('salary-year-3')?.value) || 0
-        ],
-        annualLeaveBalance: parseInt(document.getElementById('annual-leave-balance').value) || 0
-    };
-}
 
 //Handles form submission and prevents default behavior
 static async handleFormSubmit(e) {
@@ -2069,6 +2024,57 @@ class Calculator {
                 submitButton.click(); // Trigger native click
             });
         }
+    }
+
+    static FormManager.getFormData() {
+        const serviceComputationDate = document.getElementById('service-computation-date')?.value;
+        const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
+        const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
+        
+        // Calculate years of service from SCD if available
+        let calculatedYearsService;
+        let serviceDuration = null;
+        
+        if (serviceComputationDate) {
+            serviceDuration = calculateServiceDuration(serviceComputationDate);
+            calculatedYearsService = serviceDuration ? serviceDuration.totalYears : yearsServiceInput;
+            console.log('Using service duration calculated from SCD:', calculatedYearsService);
+        } else {
+            calculatedYearsService = yearsServiceInput;
+            console.log('Using manually entered years of service:', calculatedYearsService);
+        }
+
+        // Calculate additional service time from sick leave (2087 hours = 1 year)
+        const sickLeaveYears = sickLeaveBalance / 2087;
+        console.log('Additional years from sick leave:', sickLeaveYears);
+
+        const formData = {
+            fsGrade: document.getElementById('fs-grade')?.value || '',
+            fsStep: document.getElementById('fs-step')?.value || '',
+            yearsService: calculatedYearsService,
+            sickLeaveYears: sickLeaveYears,
+            serviceComputationDate: serviceComputationDate,
+            serviceDuration: serviceDuration,
+            age: parseInt(document.getElementById('age')?.value) || 0,
+            currentPost: "Washington, DC", // Always use Washington, DC
+            currentPlan: document.getElementById('current-plan')?.value || '',
+            coverageType: document.getElementById('coverage-type')?.value || '',
+            state: document.getElementById('state')?.value || '',
+            teraEligible: document.getElementById('tera-eligible')?.value || 'no',
+            teraYears: document.getElementById('tera-years')?.value || '10',
+            teraAge: document.getElementById('tera-age')?.value || '43',
+            salaryYears: [
+                parseInt(document.getElementById('salary-year-1')?.value) || 0,
+                parseInt(document.getElementById('salary-year-2')?.value) || 0,
+                parseInt(document.getElementById('salary-year-3')?.value) || 0
+            ],
+            annualLeaveBalance: parseInt(document.getElementById('annual-leave-balance').value) || 0
+        };
+
+        // Add debug logging
+        console.log('Form Data:', formData);
+        
+        return formData;
     }
 
     static calculateSeverance(formData) {
