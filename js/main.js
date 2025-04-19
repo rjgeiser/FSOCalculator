@@ -1987,8 +1987,20 @@ try {
     // Calculate all benefits
     const severanceResult = Calculator.calculateSeverance(formData);
     const retirementResult = Calculator.calculateRetirement(formData);
-    updateLifetimeReport(results.retirementOptions, formData);
     const healthResult = Calculator.calculateHealth(formData);
+    
+    // Create a unified results object
+    const results = {
+      formData: formData,
+      severance: severanceResult,
+      retirement: retirementResult,
+      health: healthResult,
+      retirementOptions: retirementResult?.scenarios || {}
+    };
+
+    // Call updateLifetimeReport with the corrected object
+    updateLifetimeReport(results.retirementOptions, formData);
+
 
     console.log('Health Result:', healthResult); // Debug log
 
