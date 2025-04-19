@@ -3145,4 +3145,4 @@ reportContainer.innerHTML = `
     </div>
   </div>
   `;
-
+}
