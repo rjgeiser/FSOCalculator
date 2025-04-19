@@ -626,6 +626,37 @@ window.addEventListener('load', function() {
 });
 
 class ErrorHandler {
+    static handleError(error, context = '') {
+        // Log the error with context
+        console.error(`Error in ${context}:`, error);
+        
+        // Format user-friendly error message
+        let userMessage = 'An error occurred. Please try again.';
+        
+        // Handle different types of errors
+        if (error instanceof ValidationError) {
+            userMessage = error.message;
+        } else if (error instanceof CalculationError) {
+            userMessage = 'Error calculating benefits. Please check your inputs.';
+        } else if (error instanceof TypeError) {
+            userMessage = 'A type error occurred. Please check your inputs.';
+        } else if (error instanceof ReferenceError) {
+            userMessage = 'A reference error occurred. Please refresh the page.';
+        } else if (error instanceof SyntaxError) {
+            userMessage = 'A syntax error occurred. Please refresh the page.';
+        }
+        
+        // Show the error to the user
+        UIManager.showError(userMessage);
+        
+        // Log additional error details
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            context: context
+        });
+    }
 }
 
 class ValidationError extends Error {
@@ -644,9 +675,136 @@ class CalculationError extends Error {
 
 // Enhanced Form Validator
 class FormValidator {
+    static validateFormData(formData) {
+        const errors = [];
+        
+        // Required fields validation with updated field IDs
+        const requiredFields = {
+            fsGrade: { name: 'Grade Level', element: 'fs-grade' },
+            fsStep: { name: 'Step', element: 'fs-step' },
+            yearsService: { name: 'Years of Service', element: 'years-service' },
+            age: { name: 'Current Age', element: 'age' },
+            currentPlan: { name: 'Health Insurance Plan', element: 'current-plan' },
+            coverageType: { name: 'Enrollment Type', element: 'coverage-type' },
+            state: { name: 'Home State of Record', element: 'state' }
+        };
 
+        Object.entries(requiredFields).forEach(([field, info]) => {
+            const element = document.getElementById(info.element);
+            if (!element) {
+                console.warn(`Form field element not found: ${info.element}`);
+                return; // Skip validation for non-existent elements
+            }
+            
+            const value = formData[field];
+            if (!value && value !== 0) { // Allow 0 as a valid value
+                errors.push(`${info.name} is required`);
+                this.showFieldError(element, `${info.name} is required`);
+            } else {
+                this.clearFieldError(element);
+            }
+        });
 
+        // Numeric validations
+        if (formData.yearsService) {
+            const yearsElement = document.getElementById('years-service');
+            if (formData.yearsService < 1 || formData.yearsService > 40) {
+                errors.push('Years of Service must be between 1 and 40');
+                this.showFieldError(yearsElement, 'Must be between 1 and 40 years');
+            }
+        }
 
+        if (formData.age) {
+            const ageElement = document.getElementById('age');
+            if (formData.age < 21 || formData.age > 80) {
+                errors.push('Age must be between 21 and 80');
+                this.showFieldError(ageElement, 'Must be between 21 and 80 years');
+            }
+        }
+
+        // TERA validation
+        if (formData.teraEligible === 'yes') {
+            const teraYearsElement = document.getElementById('tera-years');
+            const teraAgeElement = document.getElementById('tera-age');
+            
+            if (!formData.teraYears) {
+                errors.push('V/TERA Years is required when V/TERA is eligible');
+                this.showFieldError(teraYearsElement, 'Required for V/TERA eligibility');
+            }
+            
+            if (!formData.teraAge) {
+                errors.push('V/TERA Age is required when V/TERA is eligible');
+                this.showFieldError(teraAgeElement, 'Required for V/TERA eligibility');
+            }
+        }
+
+        if (errors.length > 0) {
+            throw new ValidationError(errors.join('\n'));
+        }
+
+        return true;
+    }
+
+    static showFieldError(element, message) {
+        try {
+            // Check if element exists before trying to access its properties
+            if (!element) {
+                console.warn(`Attempted to show error on non-existent element: ${message}`);
+                return;
+            }
+            
+            // Ensure element has classList before trying to modify it
+            if (element.classList) {
+                element.classList.add('invalid');
+                element.classList.remove('valid');
+            }
+            
+            // Get parent element safely
+            const parent = element.parentElement;
+            if (!parent) {
+                console.warn(`Element has no parent: ${element.id}`);
+                return;
+            }
+            
+            let errorDiv = parent.querySelector('.validation-message');
+            if (!errorDiv) {
+                errorDiv = document.createElement('div');
+                errorDiv.className = 'validation-message';
+                parent.appendChild(errorDiv);
+            }
+            errorDiv.textContent = message;
+        } catch (error) {
+            console.error('Error showing field error:', error);
+        }
+    }
+
+    static clearFieldError(element) {
+        try {
+            if (!element || !element.classList) {
+                return;
+            }
+            
+            element.classList.remove('invalid');
+            element.classList.add('valid');
+            
+            const parent = element.parentElement;
+            if (!parent) return;
+            
+            const errorDiv = parent.querySelector('.validation-message');
+            if (errorDiv) {
+                errorDiv.textContent = '';
+                errorDiv.classList.remove('error');
+            }
+        } catch (error) {
+            console.error('Error clearing field error:', error);
+        }
+    }
+
+    static clearAllErrors() {
+        document.querySelectorAll('.form-control').forEach(element => {
+            this.clearFieldError(element);
+        });
+    }
 }
 
 // UI Manager for handling UI updates
@@ -785,21 +943,194 @@ const UIManager = {
         const tabButtons = document.querySelectorAll('.tab-button');
 
 class TabManager {
+static activateTab(tabId) {
+try {
+    // Hide all tab contents first
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+        content.classList.remove('active');
+        content.setAttribute('aria-hidden', 'true');
+    });
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+        button.setAttribute('aria-selected', 'false');
+    });
 
+    // Show selected tab content
+    const selectedContent = document.getElementById(tabId);
+    const selectedButton = document.querySelector(`[data-tab="${tabId}"]`);
 
+    if (selectedContent && selectedButton) {
+        selectedContent.style.display = 'block';
+        selectedContent.classList.add('active');
+        selectedContent.setAttribute('aria-hidden', 'false');
+        
+        selectedButton.classList.add('active');
+        selectedButton.setAttribute('aria-selected', 'true');
+    }
+} catch (error) {
+    console.error('Error in activateTab:', error);
+}
+}
+
+static setupTabNavigation() {
+// Add click handlers to tab buttons
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+        const tabId = button.getAttribute('data-tab');
+        this.activateTab(tabId);
+    });
+});
+
+// Show Severance tab by default
+this.showDefaultTab();
+}
+
+static showDefaultTab() {
+this.activateTab('severance');
+}
 }
 
 class AccessibilityManager {
+    static initialize() {
+// Enhanced accessibility
+               this.setupSkipLink();
+        this.enhanceFormControls();
+        this.setupKeyboardNavigation();
+    }
 
+    static setupSkipLink() {
+        const skipLink = document.querySelector('.skip-link');
+        const mainContent = document.querySelector('main');
+        
+        skipLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            mainContent.focus();
+        });
+    }
 
+    static enhanceFormControls() {
+        // Add ARIA labels and descriptions
+        document.querySelectorAll('.form-control').forEach(control => {
+            const label = control.closest('.form-group').querySelector('label');
+            if (label) {
+                control.setAttribute('aria-label', label.textContent);
+            }
+            
+            const description = control.closest('.form-group').querySelector('.form-text');
+            if (description) {
+                const descId = `desc-${control.id}`;
+                description.id = descId;
+                control.setAttribute('aria-describedby', descId);
+            }
+        });
+    }
 
+    static setupKeyboardNavigation() {
+        // Enhanced keyboard navigation for tabs
+        const tabList = document.querySelector('.tab-buttons');
+        const tabs = tabList.querySelectorAll('.tab-button');
+        
+        tabList.setAttribute('role', 'tablist');
+        tabs.forEach(tab => {
+            tab.setAttribute('role', 'tab');
+            tab.setAttribute('tabindex', '0');
+            
+            tab.addEventListener('keydown', (e) => {
+                const targetTab = e.target;
+                const previousTab = targetTab.previousElementSibling;
+                const nextTab = targetTab.nextElementSibling;
+                
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        if (previousTab) {
+                            previousTab.focus();
+                            previousTab.click();
+                        }
+                        break;
+                    case 'ArrowRight':
+                        if (nextTab) {
+                            nextTab.focus();
+                            nextTab.click();
+                        }
+                        break;
+                }
+            });
+        });
+    }
 }
 
 // Enhanced form feedback
 class FormFeedbackManager {
+    static initialize() {
+        try {
+            this.setupInputFeedback();
+            // Only setup progress indicator if form exists
+            const calculatorForm = document.getElementById('calculator-form');
+            if (calculatorForm) {
+                this.setupProgressIndicator();
+            }
+        } catch (error) {
+            console.error('Error initializing form feedback:', error);
+        }
+    }
 
+    static setupInputFeedback() {
+        const calculatorForm= document.getElementById('calculator-form');
+        if (!calculatorForm) return;
 
+        const requiredInputs = calculatorForm.querySelectorAll('.form-control[required]');
+        requiredInputs.forEach(input => {
+            // Add visual feedback classes
+            input.addEventListener('input', () => {
+                if (input.value) {
+                    input.classList.add('is-valid');
+                    input.classList.remove('is-invalid');
+                } else {
+                    input.classList.add('is-invalid');
+                    input.classList.remove('is-valid');
+                }
+            });
 
+            // Initial validation state
+            if (input.value) {
+                input.classList.add('is-valid');
+            }
+        });
+    }
+
+    static setupProgressIndicator() {
+        const calculatorForm= document.getElementById('calculator-form');
+        if (!calculatorForm) return;
+
+        // Create progress bar if it doesn't exist
+        let progressBar = calculatorForm.querySelector('.progress-bar');
+        if (!progressBar) {
+            progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            // Insert at the beginning of the form
+            calculatorForm.insertBefore(progressBar, calculatorForm.firstChild);
+        }
+        
+        this.updateProgress();
+        
+        // Update progress as user fills form
+        calculatorForm.addEventListener('input', () => this.updateProgress());
+    }
+
+    static updateProgress() {
+        const calculatorForm = document.getElementById('calculator-form');
+        const progressBar = calculatorForm.querySelector('.progress-bar');
+        if (!calculatorForm || !progressBar) return;
+
+        const total = calculatorForm.querySelectorAll('.form-control[required]').length;
+        const filled = calculatorForm.querySelectorAll('.form-control[required]:valid').length;
+        const progress = total > 0 ? (filled / total) * 100 : 0;
+        
+        progressBar.style.width = `${progress}%`;
+    }
 }
 
 // Calculation Manager for handling all calculations
@@ -807,7 +1138,7 @@ const CalculationManager = {
     async calculateBenefits(formData) {
         try {
             // Calculate severance pay
-            const severance = FormManagerHelpers.calculateSeverance(
+            const severance = calculateSeverance(
                 formData.fsGrade,
                 formData.fsStep,
                 formData.yearsService,
@@ -1132,6 +1463,88 @@ const ACA_COVERAGE_FACTORS = {
 };
 
 // Calculate Severance Pay
+function calculateSeverance(fsGrade, fsStep, yearsService, age, post, annualLeaveBalance = 0, serviceDuration = null) {
+    // Input validation
+    if (!fsGrade || !fsStep || !yearsService || !age || !post) {
+        throw new CalculationError('Missing required inputs for severance calculation');
+    }
+
+    console.log('Calculating severance with inputs:', { 
+        fsGrade, 
+        fsStep, 
+        yearsService, 
+        age, 
+        post, 
+        annualLeaveBalance,
+        serviceDuration 
+    });
+
+    // Get base salary from salary tables
+    if (!SALARY_TABLES[fsGrade]) {
+        throw new CalculationError(`Invalid grade: ${fsGrade}`);
+    }
+
+    const stepIndex = parseInt(fsStep) - 1;
+    const baseSalary = SALARY_TABLES[fsGrade].steps[stepIndex];
+    
+    if (typeof baseSalary !== 'number' || isNaN(baseSalary)) {
+        throw new CalculationError(`Invalid salary for grade ${fsGrade} step ${fsStep}`);
+    }
+
+    console.log('Base salary:', baseSalary);
+
+    // Calculate monthly pay
+    const monthlyPay = baseSalary / 12;
+    console.log('Monthly pay:', monthlyPay);
+
+    // Use serviceDuration if available, otherwise use yearsService
+    const effectiveYearsService = serviceDuration ? serviceDuration.totalYears : yearsService;
+    
+    // Calculate severance pay (one month's pay for each year of service)
+    let severancePay = monthlyPay * effectiveYearsService;
+    console.log('Initial severance pay:', severancePay);
+
+    // Cap at one year's salary
+    severancePay = Math.min(severancePay, baseSalary);
+    console.log('Final severance pay (after cap):', severancePay);
+
+    // Calculate installments with dates (paid over three consecutive years on January 1)
+    const currentYear = new Date().getFullYear();
+    const installmentAmount = severancePay / 3;
+    const installments = [
+        {
+            amount: installmentAmount,
+            date: new Date(currentYear + 1, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        },
+        {
+            amount: installmentAmount,
+            date: new Date(currentYear + 2, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        },
+        {
+            amount: installmentAmount,
+            date: new Date(currentYear + 3, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        }
+    ];
+
+    // Calculate hourly rate for annual leave payout
+    const hourlyRate = baseSalary / 2087;
+    const annualLeavePayout = hourlyRate * annualLeaveBalance;
+
+    const result = {
+        baseSalary: baseSalary,
+        monthlyPay: monthlyPay,
+        severanceAmount: severancePay,
+        installments: installments,
+        hourlyRate: hourlyRate,
+        yearsOfService: effectiveYearsService,
+        serviceDuration: serviceDuration,
+        annualLeaveHours: annualLeaveBalance,
+        annualLeavePayout: annualLeavePayout
+    };
+
+    console.log('Severance calculation result:', result);
+    return result;
+}
 
 // Add getMRA function before calculateScenario
 function getMRA(currentAge) {
@@ -1414,6 +1827,165 @@ SALARY_TABLES.SFS = {
     })
 };
 
+// Update getFormData function to handle SFS ranks
+function getFormData() {
+    const grade = document.getElementById('fs-grade').value;
+    const step = document.getElementById('fs-step').value;
+    
+    // Get the actual salary based on grade and step
+    let baseSalary;
+    if (grade === 'SFS') {
+        if (step == 14) {
+            baseSalary = SFS_RANKS['Career Minister'].salary;
+        } else if (step >= 11) {
+            baseSalary = SFS_RANKS['Minister Counselor'].salaries[step];
+        } else {
+            baseSalary = SFS_RANKS['Counselor'].salaries[step];
+        }
+    } else {
+        baseSalary = SALARY_TABLES[grade].steps[parseInt(step) - 1];
+    }
+    
+    return {
+        fsGrade: grade,
+        fsStep: step,
+        baseSalary: baseSalary,
+        yearsService: parseInt(document.getElementById('years-service').value),
+        age: parseInt(document.getElementById('age').value),
+        currentPost: "Washington, DC", // Always use Washington, DC
+        currentPlan: document.getElementById('current-plan').value,
+        planOption: document.getElementById('plan-option').value,
+        coverageType: document.getElementById('coverage-type').value,
+        state: document.getElementById('state').value,
+        teraEligible: document.getElementById('tera-eligible').value,
+        teraYears: document.getElementById('tera-eligible').value === 'yes' ? 
+            (document.getElementById('tera-years')?.value || '10') : 
+            (document.getElementById('tera-years')?.value || '20'),
+        teraAge: document.getElementById('tera-age')?.value || '43',
+        salaryYear1: parseInt(document.getElementById('salary-year-1').value) || 0,
+        salaryYear2: parseInt(document.getElementById('salary-year-2').value) || 0,
+        salaryYear3: parseInt(document.getElementById('salary-year-3').value) || 0,
+        annualLeaveBalance: parseInt(document.getElementById('annual-leave-balance').value) || 0
+    };
+}
+
+// Replace with a single, comprehensive handler:
+class FormManager {
+static init() {
+const calculatorForm= document.getElementById('calculator-form');
+if (calculatorForm) {
+    // Remove any existing event listeners
+    calculatorForm.removeEventListener('submit', FormManager.handleFormSubmit);
+    
+    // Add the submit event listener
+    calculatorForm.addEventListener('submit', (e) => {
+        e.preventDefault(); // Prevent form from submitting normally
+        e.stopPropagation(); // Stop event from bubbling
+        FormManager.handleFormSubmit(e);
+        return false; // Ensure the form doesn't reset
+    });
+}
+}
+
+// Get form data function
+static getFormData() {
+    const serviceComputationDate = document.getElementById('service-computation-date')?.value;
+    const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
+    const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
+    
+    // Calculate years of service from SCD if available
+    let calculatedYearsService;
+    let serviceDuration = null;
+    
+    if (serviceComputationDate) {
+        serviceDuration = calculateServiceDuration(serviceComputationDate);
+        calculatedYearsService = serviceDuration ? serviceDuration.totalYears : yearsServiceInput;
+        console.log('Using service duration calculated from SCD:', calculatedYearsService);
+            } else {
+        calculatedYearsService = yearsServiceInput;
+        console.log('Using manually entered years of service:', calculatedYearsService);
+    }
+
+    // Calculate additional service time from sick leave (2087 hours = 1 year)
+    const sickLeaveYears = sickLeaveBalance / 2087;
+    console.log('Additional years from sick leave:', sickLeaveYears);
+
+    return {
+        fsGrade: document.getElementById('fs-grade')?.value || '',
+        fsStep: document.getElementById('fs-step')?.value || '',
+        yearsService: calculatedYearsService,
+        sickLeaveYears: sickLeaveYears,
+        serviceComputationDate: serviceComputationDate,
+        serviceDuration: serviceDuration,
+        age: parseInt(document.getElementById('age')?.value) || 0,
+        currentPost: "Washington, DC", // Always use Washington, DC
+        currentPlan: document.getElementById('current-plan')?.value || '',
+        coverageType: document.getElementById('coverage-type')?.value || '',
+        state: document.getElementById('state')?.value || '',
+        teraEligible: document.getElementById('tera-eligible')?.value || 'no',
+        teraYears: document.getElementById('tera-years')?.value || '10',
+        teraAge: document.getElementById('tera-age')?.value || '43',
+        salaryYears: [
+            parseInt(document.getElementById('salary-year-1')?.value) || 0,
+            parseInt(document.getElementById('salary-year-2')?.value) || 0,
+            parseInt(document.getElementById('salary-year-3')?.value) || 0
+        ],
+        annualLeaveBalance: parseInt(document.getElementById('annual-leave-balance').value) || 0
+    };
+}
+
+//Handles form submission and prevents default behavior
+static async handleFormSubmit(e) {
+try {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    FormValidator.clearAllErrors();
+    UIManager.clearError();
+    UIManager.showLoading();
+
+    const formData = FormManager.getFormData();
+    console.log('Form Data:', formData); // Debug log
+
+    FormValidator.validateFormData(formData);
+
+    // Calculate all benefits
+    const severanceResult = Calculator.calculateSeverance(formData);
+    const retirementResult = Calculator.calculateRetirement(formData);
+    const healthResult = Calculator.calculateHealth(formData);
+
+    console.log('Health Result:', healthResult); // Debug log
+
+    // Ensure health data is properly structured
+    if (healthResult && !healthResult.error) {
+        const results = {
+            formData: formData,
+            severance: severanceResult,
+            retirement: retirementResult,
+            health: healthResult
+        };
+
+        Calculator.updateResults(results);
+        UIManager.showResults();
+        TabManager.showDefaultTab();
+    } else {
+        throw new Error(healthResult.error || 'Error calculating health benefits');
+    }
+    
+    return false;
+} catch (error) {
+    console.error('Error in handleFormSubmit:', error);
+    if (error instanceof ValidationError) {
+        UIManager.showError(error.message);
+    } else {
+        ErrorHandler.handleError(error, 'handleFormSubmit');
+    }
+} finally {
+    UIManager.hideLoading();
+}
+}
+}
+
     // Service Duration Validation Functions
     function validateServiceDuration() {
         try {
@@ -1477,19 +2049,704 @@ SALARY_TABLES.SFS = {
 // ... existing code ...
 // Form submission and results handling
 class Calculator {
+    static initialize() {
+        try {
+            this.setupFormHandlers();
+            this.addTouchSupport();  // Added touch support for mobile devices
+
+            // Set Washington, DC as default post if no value is selected
+            const currentPostSelect = document.getElementById('current-post');
+            if (currentPostSelect && !currentPostSelect.value) {
+                currentPostSelect.value = "Washington, DC";
+            }
+
+            console.log('Calculator initialized successfully');
+        } catch (error) {
+            console.error('Error initializing Calculator:', error);
+        }
+    }
 
     // Method to add touch support for form submission
+    static addTouchSupport() {
+        const calculatorForm = document.getElementById('calculator-form');
+        if (!calculatorForm) return;  // Check if form exists
+        
+        const submitButton = calculatorForm.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                calculatorForm.dispatchEvent(new Event('submit'));
+            });
+        }
+    }
 
+    static setupFormHandlers() {
+        if (!calculatorForm) return;
 
+        // Set up the form submission handler
+        calculatorForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                FormValidator.clearAllErrors();
+                UIManager.showLoading();
+                UIManager.clearError();
 
+                const formData = this.getFormData();
+                FormValidator.validateFormData(formData);
 
+                const results = {
+                    formData: formData,
+                    severance: this.calculateSeverance(formData),
+                    retirement: this.calculateRetirement(formData),
+                    health: this.calculateHealth(formData)
+                };
 
+                this.updateResults(results);
+                UIManager.showResults();
+            } catch (error) {
+                ErrorHandler.handleError(error, 'form submission');
+            } finally {
+                UIManager.hideLoading();
+            }
+        });
 
+        // Add reset handler
+        calculatorForm.addEventListener('reset', () => {
+            FormValidator.clearAllErrors();
+            UIManager.clearError();
+            document.querySelectorAll('.results-container').forEach(container => {
+                container.innerHTML = '';
+                container.style.display = 'none';
+            });
+        });
 
+    // Add mobile-specific touch handling for submit button
+        const submitButton = calculatorForm.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.addEventListener('touchend', (e) => {
+        e.preventDefault();
+                submitButton.click(); // Trigger native click
+            });
+        }
+    }
 
+    static getFormData() {
+        const serviceComputationDate = document.getElementById('service-computation-date')?.value;
+        const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
+        const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
+        
+        // Calculate years of service from SCD if available
+        let calculatedYearsService;
+        let serviceDuration = null;
+        
+        if (serviceComputationDate) {
+            serviceDuration = calculateServiceDuration(serviceComputationDate);
+            calculatedYearsService = serviceDuration ? serviceDuration.totalYears : yearsServiceInput;
+            console.log('Using service duration calculated from SCD:', calculatedYearsService);
+        } else {
+            calculatedYearsService = yearsServiceInput;
+            console.log('Using manually entered years of service:', calculatedYearsService);
+        }
 
+        // Calculate additional service time from sick leave (2087 hours = 1 year)
+        const sickLeaveYears = sickLeaveBalance / 2087;
+        console.log('Additional years from sick leave:', sickLeaveYears);
+
+        const formData = {
+            fsGrade: document.getElementById('fs-grade')?.value || '',
+            fsStep: document.getElementById('fs-step')?.value || '',
+            yearsService: calculatedYearsService,
+            sickLeaveYears: sickLeaveYears,
+            serviceComputationDate: serviceComputationDate,
+            serviceDuration: serviceDuration,
+            age: parseInt(document.getElementById('age')?.value) || 0,
+            currentPost: "Washington, DC", // Always use Washington, DC
+            currentPlan: document.getElementById('current-plan')?.value || '',
+            coverageType: document.getElementById('coverage-type')?.value || '',
+            state: document.getElementById('state')?.value || '',
+            teraEligible: document.getElementById('tera-eligible')?.value || 'no',
+            teraYears: document.getElementById('tera-years')?.value || '10',
+            teraAge: document.getElementById('tera-age')?.value || '43',
+            salaryYears: [
+                parseInt(document.getElementById('salary-year-1')?.value) || 0,
+                parseInt(document.getElementById('salary-year-2')?.value) || 0,
+                parseInt(document.getElementById('salary-year-3')?.value) || 0
+            ],
+            annualLeaveBalance: parseInt(document.getElementById('annual-leave-balance').value) || 0
+        };
+
+        // Add debug logging
+        console.log('Form Data:', formData);
+        
+        return formData;
+    }
+
+    static calculateSeverance(formData) {
+        console.log('Calculating Severance with:', formData);
+        
+        // Calculate effective years of service
+        const effectiveYearsService = formData.serviceDuration ? 
+            formData.serviceDuration.totalYears : 
+            formData.yearsService;
+        
+        const result = calculateSeverance(
+            formData.fsGrade,
+            formData.fsStep,
+            effectiveYearsService,  // Use the calculated effective years
+            formData.age,
+            formData.currentPost,
+            formData.annualLeaveBalance,
+            formData.serviceDuration
+        );
+        console.log('Severance Result:', result);
+        return result;
+    }
+
+    static calculateRetirement(formData) {
+        console.log('Calculating Retirement with:', formData);
+        
+        const result = calculateFSPSAnnuity(
+            formData.fsGrade,
+            formData.fsStep,
+            formData.yearsService,
+            formData.age,
+            formData.salaryYears,
+            formData.currentPost,
+            formData.teraEligible === 'yes',
+            parseInt(formData.teraYears) || 10,
+            parseInt(formData.teraAge) || 43,
+            formData.sickLeaveYears ? 
+                { totalYears: formData.sickLeaveYears, years: Math.floor(formData.sickLeaveYears), months: Math.floor((formData.sickLeaveYears % 1) * 12), days: Math.floor(((formData.sickLeaveYears % 1) * 12 % 1) * 30) } : 
+                null,
+            formData.serviceDuration
+        );
+        console.log('Retirement Result:', result);
+        return result;
+    }
+
+    static calculateHealth(formData) {
+        console.log('Calculating health with formData:', formData); // Debug log
+        const healthResult = calculateHealthInsurance(
+            formData.currentPlan,
+            formData.coverageType,
+            formData.state
+        );
+        console.log('Health calculation result:', healthResult); // Debug log
+        return healthResult;
+    }
+
+    static updateResults(results) {
+        console.log('Updating results with:', results); // Debug log
+
+        // Update severance results
+        const severanceResults = document.getElementById('severance-results');
+        if (severanceResults && results.severance) {
+            this.updateSeveranceResults(severanceResults, results.severance);
+        }
+
+        // Update retirement results
+        const retirementResults = document.getElementById('retirement-results');
+        if (retirementResults && results.retirement) {
+            this.updateRetirementResults(retirementResults, results.retirement, results.formData, results.health);
+        }
+
+        // Update health results
+        const healthResults = document.getElementById('health-results');
+        if (healthResults && results.health) {
+            this.updateHealthResults(healthResults, results.health);
+        }
+    }
+
+    static updateSeveranceResults(container, severance) {
+        if (!container || !severance) {
+            console.warn('Missing required parameters for updateSeveranceResults');
+            return;
+        }
+
+        const serviceDurationText = severance.serviceDuration ? formatServiceDuration(severance.serviceDuration) : `${severance.yearsOfService.toFixed(1)} years`;
+
+        // Check if grade is FS-01 or SFS
+        const fsGrade = document.getElementById('fs-grade').value;
+        const isExcluded = fsGrade === 'FS-01' || fsGrade === 'SFS';
+
+        if (isExcluded) {
+            container.innerHTML = `
+                <div class="form-section">
+                    <h3>Severance Pay Summary</h3>
+                    <div class="alert alert-info" style="margin: 1rem 0; padding: 1rem; background-color: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;">
+                        <p><strong>Note:</strong> Severance pay is not available for FS-01 and Senior Foreign Service members who are involuntarily separated, as they are eligible for immediate retirement.</p>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <h3>Annual Leave Payout</h3>
+                        <div class="comparison-table">
+                            <table>
+                                <tr>
+                                    <th>Annual Leave Balance</th>
+                                    <td>${severance.annualLeaveHours || 0} hours</td>
+                                </tr>
+                                <tr>
+                                    <th>Hourly Rate</th>
+                                    <td>${Utils.formatCurrency(severance.hourlyRate || 0)}/hour</td>
+                                </tr>
+                                <tr>
+                                    <th>Total Payout</th>
+                                    <td>${Utils.formatCurrency((severance.annualLeaveHours || 0) * (severance.hourlyRate || 0))}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="form-text">
+                            <p><strong>Note:</strong> Annual leave will be paid in a lump sum after separation.</p>
+                        </div>
+                    </div>
+                </div>`;
+        } else {
+            container.innerHTML = `
+                <div class="form-section">
+                    <h3>Severance Pay Summary</h3>
+                    <div class="comparison-table">
+                        <table>
+                            <tr>
+                                <th>Base Salary</th>
+                                <td>${Utils.formatCurrency(severance.baseSalary || 0)}</td>
+                            </tr>
+                            <tr>
+                                <th>Service Duration</th>
+                                <td>${serviceDurationText}</td>
+                            </tr>
+                            <tr>
+                                <th>Amount Per Year of Service</th>
+                                <td>${Utils.formatCurrency(severance.monthlyPay || 0)}</td>
+                            </tr>
+                            <tr>
+                                <th>Total Severance</th>
+                                <td>${Utils.formatCurrency(severance.severanceAmount || 0)}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <h3>Severance Payment Schedule</h3>
+                    <div class="comparison-table">
+                        <table>
+                            ${severance.installments.map(payment => `
+                                <tr>
+                                    <th>${payment.date}</th>
+                                    <td>${Utils.formatCurrency(payment.amount)}</td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    </div>
+                    <div class="form-text">
+                        <p><strong>Note:</strong> Severance pay policy is unclear if calculations use base salary or salary adjusted with locality pay. This estimate uses base salary to avoid possible overestimation.</p>
+                        <p><strong>Important:</strong> Severance pay is not available to employees who are eligible for immediate retirement (including TERA) or to FS-01 and Senior Foreign Service members who are involuntarily separated.</p>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <h3>Annual Leave Payout</h3>
+                        <div class="comparison-table">
+                            <table>
+                                <tr>
+                                    <th>Annual Leave Balance</th>
+                                    <td>${severance.annualLeaveHours || 0} hours</td>
+                                </tr>
+                                <tr>
+                                    <th>Hourly Rate</th>
+                                    <td>${Utils.formatCurrency(severance.hourlyRate || 0)}/hour</td>
+                                </tr>
+                                <tr>
+                                    <th>Total Payout</th>
+                                    <td>${Utils.formatCurrency((severance.annualLeaveHours || 0) * (severance.hourlyRate || 0))}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="form-text">
+                            <p><strong>Note:</strong> Annual leave will be paid in a lump sum after separation.</p>
+                        </div>
+                    </div>
+                </div>`;
+        }
+    }
+
+    static updateHealthResults(container, health) {
+        if (!container || !health) {
+            console.warn('Missing required parameters for updateHealthResults');
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="form-section">
+                <h3>Current Coverage</h3>
+                <div class="comparison-table">
+                    <table>
+                        <tr>
+                            <th>Current Employee Monthly Premium</th>
+                            <td>${Utils.formatCurrency(health.fehb.monthly)}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Monthly Premium (Employee + Employer)</th>
+                            <td>${Utils.formatCurrency(health.aca.totalPremiumBase)}</td>
+                        </tr>
+                        <tr>
+                            <th>COBRA Monthly Premium</th>
+                            <td>${Utils.formatCurrency(health.cobra.monthly)} (Total Premium + 2% Admin Fee)</td>
+                        </tr>
+                        <tr>
+                            <th>COBRA Duration</th>
+                            <td>${health.cobra.duration} months</td>
+                        </tr>
+                        <tr>
+                            <th>Total COBRA Cost</th>
+                            <td>${Utils.formatCurrency(health.cobra.totalCost)}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <h3>Marketplace Options</h3>
+                <div class="comparison-table">
+                    <table>
+                        <tr>
+                            <th>Estimated Monthly Premium</th>
+                            <td>${Utils.formatCurrency(health.aca.monthly)}</td>
+                        </tr>
+                        <tr>
+                            <th>Estimated Deductible</th>
+                            <td>${Utils.formatCurrency(health.aca.deductible)}</td>
+                        </tr>
+                        <tr>
+                            <th>Estimated Out-of-Pocket Max</th>
+                            <td>${Utils.formatCurrency(health.aca.outOfPocket)}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <h3>Recommendations</h3>
+                <div class="form-text">
+                    <ul>
+                        ${health.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                    <p class="mt-3"><strong>Note:</strong> ACA Marketplace premium estimates are based on your current plan's total premium of ${Utils.formatCurrency(health.aca.totalPremiumBase)} (both employee and employer portions), adjusted for ${health.homeState} market factors. Actual marketplace premiums may vary based on plan selection, income, and available subsidies.</p>
+                </div>
+            </div>
+        `;
+    }
+
+    static updateRetirementResults(container, retirement, formData, health) {
+        if (!container || !retirement) {
+            console.warn('Missing required parameters for updateRetirementResults');
+            return;
+        }
+
+        // Get monthly health premium if available
+        const monthlyHealthPremium = health && health.fehb ? health.fehb.monthly : 0;
+        console.log('Monthly health premium for retirement calculation:', monthlyHealthPremium);
+
+        // Format service duration in years and months
+        function formatYearsAsDuration(years) {
+            if (!years) return '0 years';
+            const totalMonths = Math.round(years * 12);
+            const wholeYears = Math.floor(totalMonths / 12);
+            const remainingMonths = totalMonths % 12;
+            
+            if (wholeYears === 0) {
+                return `${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
+            } else if (remainingMonths === 0) {
+                return `${wholeYears} year${wholeYears !== 1 ? 's' : ''}`;
+            } else {
+                return `${wholeYears} year${wholeYears !== 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
+            }
+        }
+
+        const serviceDurationText = retirement.serviceDuration ? 
+            formatYearsAsDuration(retirement.serviceDuration.totalYears) : 
+            formatYearsAsDuration(formData.yearsService);
+
+        const sickLeaveText = formData.sickLeaveYears ? 
+            `${(formData.sickLeaveYears * 2087).toFixed(0)} hours (${formatYearsAsDuration(formData.sickLeaveYears)})` : 
+            '';
+
+        const totalServiceText = formatYearsAsDuration(formData.yearsService + (formData.sickLeaveYears || 0));
+
+        container.innerHTML = `
+        <div class="retirement-options">
+            <div class="option-card">
+                <h6>Service and Salary Summary</h6>
+                <div class="comparison-table">
+                    <table>
+                        <tr>
+                            <th>High-Three Average Salary</th>
+                            <td>${Utils.formatCurrency(retirement.highThreeAverage)}</td>
+                        </tr>
+                        <tr>
+                            <th>Service Duration</th>
+                            <td>${serviceDurationText}</td>
+                        </tr>
+                        ${sickLeaveText ? `
+                        <tr>
+                            <th>Creditable Sick Leave</th>
+                            <td>${sickLeaveText}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Credited Service</th>
+                            <td>${totalServiceText}</td>
+                        </tr>
+                        ` : `
+                        <tr>
+                            <th>Total Credited Service</th>
+                            <td>${serviceDurationText}</td>
+                        </tr>
+                        `}
+                        <tr>
+                            <th>Current Age</th>
+                            <td>${formData.age} years</td>
+                        </tr>
+                        <tr>
+                            <th>Minimum Retirement Age (MRA)</th>
+                            <td>${retirement.scenarios.mraPlusTen.mraAge} years</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <h3>Available Retirement Options</h3>
+            ${Object.entries(retirement.scenarios)
+                .filter(([_, scenario]) => scenario.isEligible)
+                .map(([type, scenario]) => {
+                    let eligibilityRequirements = '';
+                    let citation = '';
+                    let policyNotes = '';
+                    
+                    switch(type) {
+                        case 'immediate':
+                            eligibilityRequirements = `
+                                <h6>Eligibility Requirements</h6>
+                                <ul>
+                                    <li>Age 62 with 5 years of service</li>
+                                    <li>Age 50 with 20 years of service</li>
+                                    <li>Any age with 25 years of service</li>
+                                </ul>
+                                <h6>Benefit Calculation</h6>
+                                <ul>
+                                    <li>1.7% × first 20 years of service × high-3 average salary</li>
+                                    <li>Plus 1% × remaining years over 20 × high-3 average salary</li>
+                                    <li>Special Retirement Supplement until age 62 (if eligible)</li>
+                                </ul>`;
+                            policyNotes = `
+                                <div class="alert alert-info" style="margin-top: 10px; padding: 10px; background-color: #e2e8f0; border-radius: 4px;">
+                                    <strong>Policy Notes:</strong>
+                                    <ul>
+                                        <li>Eligible for FEHB and FEGLI coverage in retirement</li>
+                                        <li>Special Retirement Supplement provides additional income until age 62</li>
+                                        <li>No reduction in annuity regardless of age</li>
+                                    </ul>
+                                </div>`;
+                            citation = '<p class="citation">Source: Foreign Service Act of 1980, as amended, 22 U.S.C. 4051-4052; 5 U.S.C. Chapter 84</p>';
+                            break;
+                        case 'mraPlusTen':
+                            eligibilityRequirements = `
+                                <h6>Eligibility Requirements</h6>
+                                <ul>
+                                    <li>Minimum Retirement Age with 10+ years of service</li>
+                                    <li>MRA varies from 55-57 based on birth year</li>
+                                </ul>
+                                <h6>Important Details</h6>
+                                <ul>
+                                    <li>Uses 1% multiplier for all years of service (as of 2018 GTM/RET policy)</li>
+                                    <li>Reduced 5% per year if taken before age 62</li>
+                                    <li>Can postpone to reduce or eliminate reduction</li>
+                                </ul>`;
+                            policyNotes = `
+                                <div class="alert alert-info" style="margin-top: 10px; padding: 10px; background-color: #e2e8f0; border-radius: 4px;">
+                                    <strong>Policy Notes:</strong>
+                                    <ul>
+                                        <li>As of 2018, GTM/RET changed the multiplier from 1.7% to 1% for all years</li>
+                                        <li>Postponing benefits can help avoid age reduction</li>
+                                        <li>FEHB eligibility only if retirement is immediate (meeting age requirements)</li>
+                                        <li>No Special Retirement Supplement available</li>
+                                    </ul>
+                                </div>`;
+                            citation = '<p class="citation">Source: 5 U.S.C. §8412(b)(1) and §8415; GTM/RET Policy Change 2018</p>';
+                            break;
+                        case 'deferred':
+                            eligibilityRequirements = `
+                                <h6>Eligibility Requirements</h6>
+                                <ul>
+                                    <li>5+ years of service</li>
+                                    <li>Benefits begin at age 62 (or age 65 for enhanced benefit)</li>
+                                </ul>
+                                <h6>Important Details</h6>
+                                <ul>
+                                    <li>Uses 1% multiplier if starting benefits before age 65</li>
+                                    <li>Enhanced 1.7% multiplier available if waiting until age 65</li>
+                                    <li>No Special Retirement Supplement</li>
+                                    <li>No retiree health benefits</li>
+                                </ul>`;
+                            policyNotes = `
+                                <div class="alert alert-info" style="margin-top: 10px; padding: 10px; background-color: #e2e8f0; border-radius: 4px;">
+                                    <strong>Policy Notes:</strong>
+                                    <ul>
+                                        <li>Cannot maintain FEHB or FEGLI into retirement</li>
+                                        <li>Must wait until at least age 62 to begin receiving benefits</li>
+                                        <li>Enhanced 1.7% multiplier only available at age 65 or later</li>
+                                        <li>No cost-of-living adjustments until benefits begin</li>
+                                    </ul>
+                                </div>`;
+                            citation = '<p class="citation">Source: 5 U.S.C. §8413(b) and §8415</p>';
+                            break;
+                        case 'tera':
+                            eligibilityRequirements = `
+                                <h6>Eligibility Requirements</h6>
+                                <ul>
+                                    <li>Special authority when offered</li>
+                                    <li>Minimum age ${formData.teraAge} with ${formData.teraYears} years of service</li>
+                                    <li>Uses same computation as regular retirement</li>
+                                </ul>`;
+                            policyNotes = `
+                                <div class="alert alert-info" style="margin-top: 10px; padding: 10px; background-color: #e2e8f0; border-radius: 4px;">
+                                    <strong>Policy Notes:</strong>
+                                    <ul>
+                                        <li>Eligible for FEHB and FEGLI coverage in retirement</li>
+                                        <li>Special Retirement Supplement available until age 62</li>
+                                        <li>Uses enhanced 1.7% multiplier for first 20 years</li>
+                                        <li>No age reduction in annuity</li>
+                                    </ul>
+                                </div>`;
+                            citation = '<p class="citation">Source: Foreign Service Act of 1980, as amended, 22 U.S.C. 4051-4052</p>';
+                            break;
+                    }
+                    
+                    return `
+                        <div class="option-card">
+                            <h6>${type === 'mraPlusTen' ? 'MRA+10' : type === 'tera' ? 'V/TERA' : type.charAt(0).toUpperCase() + type.slice(1)} Retirement</h6>
+                            <div class="option-details">
+                                ${eligibilityRequirements}
+                                <div class="calculation-details">
+                                    <p><strong>Monthly Benefit:</strong> ${Utils.formatCurrency(scenario.monthlyAnnuity)}</p>
+                                    <p><strong>Annual Benefit:</strong> ${Utils.formatCurrency(scenario.annualAnnuity)}</p>
+
+                                    <div style="margin-top: 1rem;">
+                                        <p><strong>Net Monthly Annuity</strong></p>
+                                        
+                                        <div style="margin: 1rem 0;">
+                                            <p><strong>With Maximum Survivor Benefit (10%)</strong></p>
+                                            <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+                                                <tr>
+                                                    <td>Gross Monthly Annuity</td>
+                                                    <td style="text-align: right;">${Utils.formatCurrency(scenario.monthlyAnnuity)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Survivor Benefit (10%)</td>
+                                                    <td style="text-align: right;">-${Utils.formatCurrency(scenario.monthlyAnnuity * 0.10)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Health Insurance Premium</td>
+                                                    <td style="text-align: right;">-${Utils.formatCurrency(health?.fehb?.monthly || 0)}</td>
+                                                </tr>
+                                                <tr style="border-top: 1px solid #e2e8f0;">
+                                                    <td><strong>Net Monthly Annuity</strong></td>
+                                                    <td style="text-align: right;"><strong>${Utils.formatCurrency(scenario.monthlyAnnuity - (scenario.monthlyAnnuity * 0.10) - (health?.fehb?.monthly || 0))}</strong></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+
+                                        <div style="margin: 1rem 0;">
+                                            <p><strong>With Reduced Survivor Benefit (5%)</strong></p>
+                                            <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+                                                <tr>
+                                                    <td>Gross Monthly Annuity</td>
+                                                    <td style="text-align: right;">${Utils.formatCurrency(scenario.monthlyAnnuity)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Survivor Benefit (5%)</td>
+                                                    <td style="text-align: right;">-${Utils.formatCurrency(scenario.monthlyAnnuity * 0.05)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Health Insurance Premium</td>
+                                                    <td style="text-align: right;">-${Utils.formatCurrency(health?.fehb?.monthly || 0)}</td>
+                                                </tr>
+                                                <tr style="border-top: 1px solid #e2e8f0;">
+                                                    <td><strong>Net Monthly Annuity</strong></td>
+                                                    <td style="text-align: right;"><strong>${Utils.formatCurrency(scenario.monthlyAnnuity - (scenario.monthlyAnnuity * 0.05) - (health?.fehb?.monthly || 0))}</strong></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        
+                                        <p style="margin-top: 0.5rem;">
+                                            <em>Note: Maximum survivor benefit provides 50% of your full annuity to your survivor, while reduced benefit provides 25%. Actual deductions may vary based on your elections.</em>
+                                        </p>
+                                    </div>
+                                </div>
+                                ${policyNotes}
+                                ${citation}
+                            </div>
+                        </div>`;
+                }).join('')}
+        </div>
+
+        <div class="retirement-notes">
+            <h5>Important Notes</h5>
+            <ul>
+                <li>All calculations are estimates based on current policy and provided information</li>
+                <li>Actual benefits may vary based on final service computation and other factors</li>
+                <li>Special Retirement Supplement (SRS) eligibility and calculation:
+                    <ul>
+                        <li>Available for immediate retirement and V/TERA before age 62</li>
+                        <li>Must meet one of these criteria:
+                            <ul>
+                                <li>Age 50+ with 20+ years of service</li>
+                                <li>Any age with 25+ years of service</li>
+                                <li>V/TERA retirement meeting minimum age (43) and service (10 years) requirements</li>
+                            </ul>
+                        </li>
+                        <li>SRS estimate based on career average base pay earnings (excluding locality pay) for conservative estimation</li>
+                        <li>Maximum SRS capped at Social Security maximum benefit ($3,627 for 2024)</li>
+                        <li>Actual SRS may be higher if locality pay is included in HR's final calculation</li>
+                    </ul>
+                </li>
+                <li>FEHB Coverage Eligibility:
+                    <ul>
+                        <li>Immediate Retirement: Eligible if covered for 5 years before retirement</li>
+                        <li>MRA+10: Only eligible if taking immediate annuity (not postponed)</li>
+                        <li>Deferred: Not eligible to continue FEHB coverage</li>
+                        <li>V/TERA: Eligible if covered for 5 years before retirement</li>
+                    </ul>
+                </li>
+                <li>Consider consulting with HR for official calculations and guidance</li>
+            </ul>
+        </div>`;
+    }
 
 // Function to update plan prices based on selected enrollment type
+static updatePlanPrices() {
+    const planSelect = document.getElementById('current-plan');
+    const coverageTypeSelect = document.getElementById('coverage-type');
+    
+    if (!planSelect || !coverageTypeSelect) {
+        console.warn('Required form elements not found');
+        return;
+    }
+
+    const selectedPlan = planSelect.value;
+    if (!selectedPlan) {
+        coverageTypeSelect.disabled = true;
+        return;
+    }
+
+    coverageTypeSelect.disabled = false;
+
+    // Get rates directly from HEALTH_INSURANCE_RATES
+    const planRates = window.HEALTH_INSURANCE_RATES[selectedPlan];
+    if (!planRates) {
+        console.warn('No rates found for selected plan:', selectedPlan);
+        return;
+    }
+
+    const coverageType = coverageTypeSelect.value;
+    const rateInfo = planRates[coverageType];
+
+    if (!rateInfo || typeof rateInfo.monthly !== 'number') {
+        console.warn('No rate found for coverage type:', coverageType);
+        return;
+    }
+} catch (error) {
+    console.error('Error in updatePlanPrices:', error);
+}
 };
 
 function initializeAfterLoad() {
@@ -1533,11 +2790,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (planSelect && coverageTypeSelect) {
         coverageTypeSelect.disabled = !planSelect.value;
         planSelect.addEventListener('change', function() {
-        FormManagerHelpers.updatePlanPrices();
+        updatePlanPrices();
         coverageTypeSelect.disabled = !this.value;
         });
         coverageTypeSelect.addEventListener('change', updatePlanPrices);
-        FormManagerHelpers.updatePlanPrices();
+        updatePlanPrices();
     } else {
         console.warn('Health insurance form elements not found:', {
         planSelect: !!planSelect,
@@ -1601,7 +2858,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-
     // Initialize form elements with proper timing
     document.addEventListener('DOMContentLoaded', function() {
         try {
@@ -1620,11 +2876,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (planSelect && coverageTypeSelect) {
                 coverageTypeSelect.disabled = !planSelect.value;
                 planSelect.addEventListener('change', function() {
-                    FormManagerHelpers.updatePlanPrices();
+                    updatePlanPrices();
                     coverageTypeSelect.disabled = !this.value;
                 });
                 coverageTypeSelect.addEventListener('change', updatePlanPrices);
-                FormManagerHelpers.updatePlanPrices();
+                updatePlanPrices();
             } else {
                 console.warn('Health insurance form elements not found during initialization:', {
                     planSelect: !!planSelect,
@@ -1806,1194 +3062,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Function to update step dropdown visibility based on grade
-
-
-class FormManagerHelpers {
-
-      static FormManagerHelpers.handleError(error, context = '') {
-          // Log the error with context
-          console.error(`Error in ${context}:`, error);
-
-          // Format user-friendly error message
-          let userMessage = 'An error occurred. Please try again.';
-
-          // Handle different types of errors
-          if (error instanceof ValidationError) {
-              userMessage = error.message;
-          } else if (error instanceof CalculationError) {
-              userMessage = 'Error calculating benefits. Please check your inputs.';
-          } else if (error instanceof TypeError) {
-              userMessage = 'A type error occurred. Please check your inputs.';
-          } else if (error instanceof ReferenceError) {
-              userMessage = 'A reference error occurred. Please refresh the page.';
-          } else if (error instanceof SyntaxError) {
-              userMessage = 'A syntax error occurred. Please refresh the page.';
-          }
-
-          // Show the error to the user
-          UIManager.showError(userMessage);
-
-          // Log additional error details
-          console.error('Error details:', {
-              name: error.name,
-              message: error.message,
-              stack: error.stack,
-              context: context
-          });
-      }
-      static FormManagerHelpers.validateFormData(formData) {
-          const errors = [];
-
-          // Required fields validation with updated field IDs
-          const requiredFields = {
-              fsGrade: { name: 'Grade Level', element: 'fs-grade' },
-              fsStep: { name: 'Step', element: 'fs-step' },
-              yearsService: { name: 'Years of Service', element: 'years-service' },
-              age: { name: 'Current Age', element: 'age' },
-              currentPlan: { name: 'Health Insurance Plan', element: 'current-plan' },
-              coverageType: { name: 'Enrollment Type', element: 'coverage-type' },
-              state: { name: 'Home State of Record', element: 'state' }
-          };
-
-          Object.entries(requiredFields).forEach(([field, info]) => {
-              const element = document.getElementById(info.element);
-              if (!element) {
-                  console.warn(`Form field element not found: ${info.element}`);
-                  return; // Skip validation for non-existent elements
-              }
-
-              const value = formData[field];
-              if (!value && value !== 0) { // Allow 0 as a valid value
-                  errors.push(`${info.name} is required`);
-                  this.showFieldError(element, `${info.name} is required`);
-              } else {
-                  this.clearFieldError(element);
-              }
-          });
-
-          // Numeric validations
-          if (formData.yearsService) {
-              const yearsElement = document.getElementById('years-service');
-              if (formData.yearsService < 1 || formData.yearsService > 40) {
-                  errors.push('Years of Service must be between 1 and 40');
-                  this.showFieldError(yearsElement, 'Must be between 1 and 40 years');
-              }
-          }
-
-          if (formData.age) {
-              const ageElement = document.getElementById('age');
-              if (formData.age < 21 || formData.age > 80) {
-                  errors.push('Age must be between 21 and 80');
-                  this.showFieldError(ageElement, 'Must be between 21 and 80 years');
-              }
-          }
-
-          // TERA validation
-          if (formData.teraEligible === 'yes') {
-              const teraYearsElement = document.getElementById('tera-years');
-              const teraAgeElement = document.getElementById('tera-age');
-
-              if (!formData.teraYears) {
-                  errors.push('V/TERA Years is required when V/TERA is eligible');
-                  this.showFieldError(teraYearsElement, 'Required for V/TERA eligibility');
-              }
-
-              if (!formData.teraAge) {
-                  errors.push('V/TERA Age is required when V/TERA is eligible');
-                  this.showFieldError(teraAgeElement, 'Required for V/TERA eligibility');
-              }
-          }
-
-          if (errors.length > 0) {
-              throw new ValidationError(errors.join('\n'));
-          }
-
-          return true;
-      }
-      static FormManagerHelpers.showFieldError(element, message) {
-          try {
-              // Check if element exists before trying to access its properties
-              if (!element) {
-                  console.warn(`Attempted to show error on non-existent element: ${message}`);
-                  return;
-              }
-
-              // Ensure element has classList before trying to modify it
-              if (element.classList) {
-                  element.classList.add('invalid');
-                  element.classList.remove('valid');
-              }
-
-              // Get parent element safely
-              const parent = element.parentElement;
-              if (!parent) {
-                  console.warn(`Element has no parent: ${element.id}`);
-                  return;
-              }
-
-              let errorDiv = parent.querySelector('.validation-message');
-              if (!errorDiv) {
-                  errorDiv = document.createElement('div');
-                  errorDiv.className = 'validation-message';
-                  parent.appendChild(errorDiv);
-              }
-              errorDiv.textContent = message;
-          } catch (error) {
-              console.error('Error showing field error:', error);
-          }
-      }
-      static FormManagerHelpers.clearFieldError(element) {
-          try {
-              if (!element || !element.classList) {
-                  return;
-              }
-
-              element.classList.remove('invalid');
-              element.classList.add('valid');
-
-              const parent = element.parentElement;
-              if (!parent) return;
-
-              const errorDiv = parent.querySelector('.validation-message');
-              if (errorDiv) {
-                  errorDiv.textContent = '';
-                  errorDiv.classList.remove('error');
-              }
-          } catch (error) {
-              console.error('Error clearing field error:', error);
-          }
-      }
-      static FormManagerHelpers.clearAllErrors() {
-          document.querySelectorAll('.form-control').forEach(element => {
-              this.clearFieldError(element);
-          });
-      }
-  static FormManagerHelpers.activateTab(tabId) {
-  try {
-      // Hide all tab contents first
-      document.querySelectorAll('.tab-content').forEach(content => {
-          content.style.display = 'none';
-          content.classList.remove('active');
-          content.setAttribute('aria-hidden', 'true');
-      });
-
-      // Remove active class from all buttons
-      document.querySelectorAll('.tab-button').forEach(button => {
-          button.classList.remove('active');
-          button.setAttribute('aria-selected', 'false');
-      });
-
-      // Show selected tab content
-      const selectedContent = document.getElementById(tabId);
-      const selectedButton = document.querySelector(`[data-tab="${tabId}"]`);
-
-      if (selectedContent && selectedButton) {
-          selectedContent.style.display = 'block';
-          selectedContent.classList.add('active');
-          selectedContent.setAttribute('aria-hidden', 'false');
-
-          selectedButton.classList.add('active');
-          selectedButton.setAttribute('aria-selected', 'true');
-      }
-  } catch (error) {
-      console.error('Error in activateTab:', error);
-  }
-  }
-  static FormManagerHelpers.setupTabNavigation() {
-  // Add click handlers to tab buttons
-  document.querySelectorAll('.tab-button').forEach(button => {
-      button.addEventListener('click', () => {
-          const tabId = button.getAttribute('data-tab');
-          this.activateTab(tabId);
-      });
-  });
-
-  // Show Severance tab by default
-  this.showDefaultTab();
-  }
-  static FormManagerHelpers.showDefaultTab() {
-  this.activateTab('severance');
-  }
-      static FormManagerHelpers.initialize() {
-  // Enhanced accessibility
-                 this.setupSkipLink();
-          this.enhanceFormControls();
-          this.setupKeyboardNavigation();
-      }
-      static FormManagerHelpers.setupSkipLink() {
-          const skipLink = document.querySelector('.skip-link');
-          const mainContent = document.querySelector('main');
-
-          skipLink.addEventListener('click', (e) => {
-              e.preventDefault();
-              mainContent.focus();
-          });
-      }
-      static FormManagerHelpers.enhanceFormControls() {
-          // Add ARIA labels and descriptions
-          document.querySelectorAll('.form-control').forEach(control => {
-              const label = control.closest('.form-group').querySelector('label');
-              if (label) {
-                  control.setAttribute('aria-label', label.textContent);
-              }
-
-              const description = control.closest('.form-group').querySelector('.form-text');
-              if (description) {
-                  const descId = `desc-${control.id}`;
-                  description.id = descId;
-                  control.setAttribute('aria-describedby', descId);
-              }
-          });
-      }
-      static FormManagerHelpers.setupKeyboardNavigation() {
-          // Enhanced keyboard navigation for tabs
-          const tabList = document.querySelector('.tab-buttons');
-          const tabs = tabList.querySelectorAll('.tab-button');
-
-          tabList.setAttribute('role', 'tablist');
-          tabs.forEach(tab => {
-              tab.setAttribute('role', 'tab');
-              tab.setAttribute('tabindex', '0');
-
-              tab.addEventListener('keydown', (e) => {
-                  const targetTab = e.target;
-                  const previousTab = targetTab.previousElementSibling;
-                  const nextTab = targetTab.nextElementSibling;
-
-                  switch(e.key) {
-                      case 'ArrowLeft':
-                          if (previousTab) {
-                              previousTab.focus();
-                              previousTab.click();
-                          }
-                          break;
-                      case 'ArrowRight':
-                          if (nextTab) {
-                              nextTab.focus();
-                              nextTab.click();
-                          }
-                          break;
-                  }
-              });
-          });
-      }
-      static FormManagerHelpers.initialize() {
-          try {
-              this.setupInputFeedback();
-              // Only setup progress indicator if form exists
-              const calculatorForm = document.getElementById('calculator-form');
-              if (calculatorForm) {
-                  this.setupProgressIndicator();
-              }
-          } catch (error) {
-              console.error('Error initializing form feedback:', error);
-          }
-      }
-      static FormManagerHelpers.setupInputFeedback() {
-          const calculatorForm= document.getElementById('calculator-form');
-          if (!calculatorForm) return;
-
-          const requiredInputs = calculatorForm.querySelectorAll('.form-control[required]');
-          requiredInputs.forEach(input => {
-              // Add visual feedback classes
-              input.addEventListener('input', () => {
-                  if (input.value) {
-                      input.classList.add('is-valid');
-                      input.classList.remove('is-invalid');
-                  } else {
-                      input.classList.add('is-invalid');
-                      input.classList.remove('is-valid');
-                  }
-              });
-
-              // Initial validation state
-              if (input.value) {
-                  input.classList.add('is-valid');
-              }
-          });
-      }
-      static FormManagerHelpers.setupProgressIndicator() {
-          const calculatorForm= document.getElementById('calculator-form');
-          if (!calculatorForm) return;
-
-          // Create progress bar if it doesn't exist
-          let progressBar = calculatorForm.querySelector('.progress-bar');
-          if (!progressBar) {
-              progressBar = document.createElement('div');
-              progressBar.className = 'progress-bar';
-              // Insert at the beginning of the form
-              calculatorForm.insertBefore(progressBar, calculatorForm.firstChild);
-          }
-
-          this.updateProgress();
-
-          // Update progress as user fills form
-          calculatorForm.addEventListener('input', () => this.updateProgress());
-      }
-      static FormManagerHelpers.updateProgress() {
-          const calculatorForm = document.getElementById('calculator-form');
-          const progressBar = calculatorForm.querySelector('.progress-bar');
-          if (!calculatorForm || !progressBar) return;
-
-          const total = calculatorForm.querySelectorAll('.form-control[required]').length;
-          const filled = calculatorForm.querySelectorAll('.form-control[required]:valid').length;
-          const progress = total > 0 ? (filled / total) * 100 : 0;
-
-          progressBar.style.width = `${progress}%`;
-      }
-  static async handleFormSubmit(e) {
-  try {
-      e.preventDefault();
-      e.stopPropagation();
-
-      FormValidator.clearAllErrors();
-      UIManager.clearError();
-      UIManager.showLoading();
-
-      const formData = FormManager.getFormData();
-      console.log('Form Data:', formData); // Debug log
-
-      FormValidator.validateFormData(formData);
-
-      // Calculate all benefits
-      const severanceResult = Calculator.calculateSeverance(formData);
-      const retirementResult = Calculator.calculateRetirement(formData);
-      const healthResult = Calculator.calculateHealth(formData);
-
-      console.log('Health Result:', healthResult); // Debug log
-
-      // Ensure health data is properly structured
-      if (healthResult && !healthResult.error) {
-          const results = {
-              formData: formData,
-              severance: severanceResult,
-              retirement: retirementResult,
-              health: healthResult
-          };
-
-          Calculator.updateResults(results);
-          UIManager.showResults();
-          TabManager.showDefaultTab();
-      } else {
-          throw new Error(healthResult.error || 'Error calculating health benefits');
-      }
-
-      return false;
-  } catch (error) {
-      console.error('Error in handleFormSubmit:', error);
-      if (error instanceof ValidationError) {
-          UIManager.showError(error.message);
-      } else {
-          ErrorHandler.handleError(error, 'handleFormSubmit');
-      }
-  } finally {
-      UIManager.hideLoading();
-  }
-  }
-      static FormManagerHelpers.initialize() {
-          try {
-              this.setupFormHandlers();
-              this.addTouchSupport();  // Added touch support for mobile devices
-
-              // Set Washington, DC as default post if no value is selected
-              const currentPostSelect = document.getElementById('current-post');
-              if (currentPostSelect && !currentPostSelect.value) {
-                  currentPostSelect.value = "Washington, DC";
-              }
-
-              console.log('Calculator initialized successfully');
-          } catch (error) {
-              console.error('Error initializing Calculator:', error);
-          }
-      }
-      static FormManagerHelpers.addTouchSupport() {
-          const calculatorForm = document.getElementById('calculator-form');
-          if (!calculatorForm) return;  // Check if form exists
-
-          const submitButton = calculatorForm.querySelector('button[type="submit"]');
-          if (submitButton) {
-              submitButton.addEventListener('touchend', (e) => {
-                  e.preventDefault();
-                  calculatorForm.dispatchEvent(new Event('submit'));
-              });
-          }
-      }
-      static FormManagerHelpers.setupFormHandlers() {
-          if (!calculatorForm) return;
-
-          // Set up the form submission handler
-          calculatorForm.addEventListener('submit', FormManagerHelpers.async(e) => {
-              e.preventDefault();
-              try {
-                  FormValidator.clearAllErrors();
-                  UIManager.showLoading();
-                  UIManager.clearError();
-
-                  const formData = this.FormManager.getFormData();
-                  FormValidator.validateFormData(formData);
-
-                  const results = {
-                      formData: formData,
-                      severance: this.calculateSeverance(formData),
-                      retirement: this.calculateRetirement(formData),
-                      health: this.calculateHealth(formData)
-                  };
-
-                  this.updateResults(results);
-                  UIManager.showResults();
-              } catch (error) {
-                  ErrorHandler.handleError(error, 'form submission');
-              } finally {
-                  UIManager.hideLoading();
-              }
-          });
-
-          // Add reset handler
-          calculatorForm.addEventListener('reset', () => {
-              FormValidator.clearAllErrors();
-              UIManager.clearError();
-              document.querySelectorAll('.results-container').forEach(container => {
-                  container.innerHTML = '';
-                  container.style.display = 'none';
-              });
-          });
-
-      // Add mobile-specific touch handling for submit button
-          const submitButton = calculatorForm.querySelector('button[type="submit"]');
-          if (submitButton) {
-              submitButton.addEventListener('touchend', (e) => {
-          e.preventDefault();
-                  submitButton.click(); // Trigger native click
-              });
-          }
-      }
-      static FormManager.getFormData() {
-          const serviceComputationDate = document.getElementById('service-computation-date')?.value;
-          const yearsServiceInput = parseInt(document.getElementById('years-service')?.value) || 0;
-          const sickLeaveBalance = parseFloat(document.getElementById('sick-leave-balance')?.value) || 0;
-
-          // Calculate years of service from SCD if available
-          let calculatedYearsService;
-          let serviceDuration = null;
-
-          if (serviceComputationDate) {
-              serviceDuration = calculateServiceDuration(serviceComputationDate);
-              calculatedYearsService = serviceDuration ? serviceDuration.totalYears : yearsServiceInput;
-              console.log('Using service duration calculated from SCD:', calculatedYearsService);
-          } else {
-              calculatedYearsService = yearsServiceInput;
-              console.log('Using manually entered years of service:', calculatedYearsService);
-          }
-
-          // Calculate additional service time from sick leave (2087 hours = 1 year)
-          const sickLeaveYears = sickLeaveBalance / 2087;
-          console.log('Additional years from sick leave:', sickLeaveYears);
-
-          const formData = {
-              fsGrade: document.getElementById('fs-grade')?.value || '',
-              fsStep: document.getElementById('fs-step')?.value || '',
-              yearsService: calculatedYearsService,
-              sickLeaveYears: sickLeaveYears,
-              serviceComputationDate: serviceComputationDate,
-              serviceDuration: serviceDuration,
-              age: parseInt(document.getElementById('age')?.value) || 0,
-              currentPost: "Washington, DC", // Always use Washington, DC
-              currentPlan: document.getElementById('current-plan')?.value || '',
-              coverageType: document.getElementById('coverage-type')?.value || '',
-              state: document.getElementById('state')?.value || '',
-              teraEligible: document.getElementById('tera-eligible')?.value || 'no',
-              teraYears: document.getElementById('tera-years')?.value || '10',
-              teraAge: document.getElementById('tera-age')?.value || '43',
-              salaryYears: [
-                  parseInt(document.getElementById('salary-year-1')?.value) || 0,
-                  parseInt(document.getElementById('salary-year-2')?.value) || 0,
-                  parseInt(document.getElementById('salary-year-3')?.value) || 0
-              ],
-              annualLeaveBalance: parseInt(document.getElementById('annual-leave-balance').value) || 0
-          };
-
-          // Add debug logging
-          console.log('Form Data:', formData);
-
-          return formData;
-      }
-      static FormManagerHelpers.calculateSeverance(formData) {
-          console.log('Calculating Severance with:', formData);
-
-          // Calculate effective years of service
-          const effectiveYearsService = formData.serviceDuration ? 
-              formData.serviceDuration.totalYears : 
-              formData.yearsService;
-
-          const result = FormManagerHelpers.calculateSeverance(
-              formData.fsGrade,
-              formData.fsStep,
-              effectiveYearsService,  // Use the calculated effective years
-              formData.age,
-              formData.currentPost,
-              formData.annualLeaveBalance,
-              formData.serviceDuration
-          );
-          console.log('Severance Result:', result);
-          return result;
-      }
-      static FormManagerHelpers.calculateRetirement(formData) {
-          console.log('Calculating Retirement with:', formData);
-
-          const result = calculateFSPSAnnuity(
-              formData.fsGrade,
-              formData.fsStep,
-              formData.yearsService,
-              formData.age,
-              formData.salaryYears,
-              formData.currentPost,
-              formData.teraEligible === 'yes',
-              parseInt(formData.teraYears) || 10,
-              parseInt(formData.teraAge) || 43,
-              formData.sickLeaveYears ? 
-                  { totalYears: formData.sickLeaveYears, years: Math.floor(formData.sickLeaveYears), months: Math.floor((formData.sickLeaveYears % 1) * 12), days: Math.floor(((formData.sickLeaveYears % 1) * 12 % 1) * 30) } : 
-                  null,
-              formData.serviceDuration
-          );
-          console.log('Retirement Result:', result);
-          return result;
-      }
-      static FormManagerHelpers.calculateHealth(formData) {
-          console.log('Calculating health with formData:', formData); // Debug log
-          const healthResult = calculateHealthInsurance(
-              formData.currentPlan,
-              formData.coverageType,
-              formData.state
-          );
-          console.log('Health calculation result:', healthResult); // Debug log
-          return healthResult;
-      }
-      static FormManagerHelpers.updateResults(results) {
-          console.log('Updating results with:', results); // Debug log
-
-          // Update severance results
-          const severanceResults = document.getElementById('severance-results');
-          if (severanceResults && results.severance) {
-              this.updateSeveranceResults(severanceResults, results.severance);
-          }
-
-          // Update retirement results
-          const retirementResults = document.getElementById('retirement-results');
-          if (retirementResults && results.retirement) {
-              this.updateRetirementResults(retirementResults, results.retirement, results.formData, results.health);
-          }
-
-          // Update health results
-          const healthResults = document.getElementById('health-results');
-          if (healthResults && results.health) {
-              this.updateHealthResults(healthResults, results.health);
-          }
-      }
-      static FormManagerHelpers.updateSeveranceResults(container, severance) {
-          if (!container || !severance) {
-              console.warn('Missing required parameters for updateSeveranceResults');
-              return;
-          }
-
-          const serviceDurationText = severance.serviceDuration ? formatServiceDuration(severance.serviceDuration) : `${severance.yearsOfService.toFixed(1)} years`;
-
-          // Check if grade is FS-01 or SFS
-          const fsGrade = document.getElementById('fs-grade').value;
-          const isExcluded = fsGrade === 'FS-01' || fsGrade === 'SFS';
-
-          if (isExcluded) {
-              container.innerHTML = `
-                  <div class="form-section">
-                      <h3>Severance Pay Summary</h3>
-                      <div class="alert alert-info" style="margin: 1rem 0; padding: 1rem; background-color: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;">
-                          <p><strong>Note:</strong> Severance pay is not available for FS-01 and Senior Foreign Service members who are involuntarily separated, as they are eligible for immediate retirement.</p>
-                      </div>
-                      <div style="margin-top: 1rem;">
-                          <h3>Annual Leave Payout</h3>
-                          <div class="comparison-table">
-                              <table>
-                                  <tr>
-                                      <th>Annual Leave Balance</th>
-                                      <td>${severance.annualLeaveHours || 0} hours</td>
-                                  </tr>
-                                  <tr>
-                                      <th>Hourly Rate</th>
-                                      <td>${Utils.formatCurrency(severance.hourlyRate || 0)}/hour</td>
-                                  </tr>
-                                  <tr>
-                                      <th>Total Payout</th>
-                                      <td>${Utils.formatCurrency((severance.annualLeaveHours || 0) * (severance.hourlyRate || 0))}</td>
-                                  </tr>
-                              </table>
-                          </div>
-                          <div class="form-text">
-                              <p><strong>Note:</strong> Annual leave will be paid in a lump sum after separation.</p>
-                          </div>
-                      </div>
-                  </div>`;
-          } else {
-              container.innerHTML = `
-                  <div class="form-section">
-                      <h3>Severance Pay Summary</h3>
-                      <div class="comparison-table">
-                          <table>
-                              <tr>
-                                  <th>Base Salary</th>
-                                  <td>${Utils.formatCurrency(severance.baseSalary || 0)}</td>
-                              </tr>
-                              <tr>
-                                  <th>Service Duration</th>
-                                  <td>${serviceDurationText}</td>
-                              </tr>
-                              <tr>
-                                  <th>Amount Per Year of Service</th>
-                                  <td>${Utils.formatCurrency(severance.monthlyPay || 0)}</td>
-                              </tr>
-                              <tr>
-                                  <th>Total Severance</th>
-                                  <td>${Utils.formatCurrency(severance.severanceAmount || 0)}</td>
-                              </tr>
-                          </table>
-                      </div>
-                      <h3>Severance Payment Schedule</h3>
-                      <div class="comparison-table">
-                          <table>
-                              ${severance.installments.map(payment => `
-                                  <tr>
-                                      <th>${payment.date}</th>
-                                      <td>${Utils.formatCurrency(payment.amount)}</td>
-                                  </tr>
-                              `).join('')}
-                          </table>
-                      </div>
-                      <div class="form-text">
-                          <p><strong>Note:</strong> Severance pay policy is unclear if calculations use base salary or salary adjusted with locality pay. This estimate uses base salary to avoid possible overestimation.</p>
-                          <p><strong>Important:</strong> Severance pay is not available to employees who are eligible for immediate retirement (including TERA) or to FS-01 and Senior Foreign Service members who are involuntarily separated.</p>
-                      </div>
-                      <div style="margin-top: 1rem;">
-                          <h3>Annual Leave Payout</h3>
-                          <div class="comparison-table">
-                              <table>
-                                  <tr>
-                                      <th>Annual Leave Balance</th>
-                                      <td>${severance.annualLeaveHours || 0} hours</td>
-                                  </tr>
-                                  <tr>
-                                      <th>Hourly Rate</th>
-                                      <td>${Utils.formatCurrency(severance.hourlyRate || 0)}/hour</td>
-                                  </tr>
-                                  <tr>
-                                      <th>Total Payout</th>
-                                      <td>${Utils.formatCurrency((severance.annualLeaveHours || 0) * (severance.hourlyRate || 0))}</td>
-                                  </tr>
-                              </table>
-                          </div>
-                          <div class="form-text">
-                              <p><strong>Note:</strong> Annual leave will be paid in a lump sum after separation.</p>
-                          </div>
-                      </div>
-                  </div>`;
-          }
-      }
-      static FormManagerHelpers.updateHealthResults(container, health) {
-          if (!container || !health) {
-              console.warn('Missing required parameters for updateHealthResults');
-              return;
-          }
-
-          container.innerHTML = `
-              <div class="form-section">
-                  <h3>Current Coverage</h3>
-                  <div class="comparison-table">
-                      <table>
-                          <tr>
-                              <th>Current Employee Monthly Premium</th>
-                              <td>${Utils.formatCurrency(health.fehb.monthly)}</td>
-                          </tr>
-                          <tr>
-                              <th>Total Monthly Premium (Employee + Employer)</th>
-                              <td>${Utils.formatCurrency(health.aca.totalPremiumBase)}</td>
-                          </tr>
-                          <tr>
-                              <th>COBRA Monthly Premium</th>
-                              <td>${Utils.formatCurrency(health.cobra.monthly)} (Total Premium + 2% Admin Fee)</td>
-                          </tr>
-                          <tr>
-                              <th>COBRA Duration</th>
-                              <td>${health.cobra.duration} months</td>
-                          </tr>
-                          <tr>
-                              <th>Total COBRA Cost</th>
-                              <td>${Utils.formatCurrency(health.cobra.totalCost)}</td>
-                          </tr>
-                      </table>
-                  </div>
-
-                  <h3>Marketplace Options</h3>
-                  <div class="comparison-table">
-                      <table>
-                          <tr>
-                              <th>Estimated Monthly Premium</th>
-                              <td>${Utils.formatCurrency(health.aca.monthly)}</td>
-                          </tr>
-                          <tr>
-                              <th>Estimated Deductible</th>
-                              <td>${Utils.formatCurrency(health.aca.deductible)}</td>
-                          </tr>
-                          <tr>
-                              <th>Estimated Out-of-Pocket Max</th>
-                              <td>${Utils.formatCurrency(health.aca.outOfPocket)}</td>
-                          </tr>
-                      </table>
-                  </div>
-
-                  <h3>Recommendations</h3>
-                  <div class="form-text">
-                      <ul>
-                          ${health.recommendations.map(rec => `<li>${rec}</li>`).join('')}
-                      </ul>
-                      <p class="mt-3"><strong>Note:</strong> ACA Marketplace premium estimates are based on your current plan's total premium of ${Utils.formatCurrency(health.aca.totalPremiumBase)} (both employee and employer portions), adjusted for ${health.homeState} market factors. Actual marketplace premiums may vary based on plan selection, income, and available subsidies.</p>
-                  </div>
-              </div>
-          `;
-      }
-      static FormManagerHelpers.updateRetirementResults(container, retirement, formData, health) {
-          if (!container || !retirement) {
-              console.warn('Missing required parameters for updateRetirementResults');
-              return;
-          }
-
-          // Get monthly health premium if available
-          const monthlyHealthPremium = health && health.fehb ? health.fehb.monthly : 0;
-          console.log('Monthly health premium for retirement calculation:', monthlyHealthPremium);
-
-          // Format service duration in years and months
-          function formatServiceDuration(years) {
-              if (!years) return '0 years';
-              const totalMonths = Math.round(years * 12);
-              const wholeYears = Math.floor(totalMonths / 12);
-              const remainingMonths = totalMonths % 12;
-
-              if (wholeYears === 0) {
-                  return `${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
-              } else if (remainingMonths === 0) {
-                  return `${wholeYears} year${wholeYears !== 1 ? 's' : ''}`;
-              } else {
-                  return `${wholeYears} year${wholeYears !== 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
-              }
-          }
-
-          const serviceDurationText = retirement.serviceDuration ? 
-              formatServiceDuration(retirement.serviceDuration.totalYears) : 
-              formatServiceDuration(formData.yearsService);
-
-          const sickLeaveText = formData.sickLeaveYears ? 
-              `${(formData.sickLeaveYears * 2087).toFixed(0)} hours (${formatServiceDuration(formData.sickLeaveYears)})` : 
-              '';
-
-          const totalServiceText = formatServiceDuration(formData.yearsService + (formData.sickLeaveYears || 0));
-
-          container.innerHTML = `
-          <div class="retirement-options">
-              <div class="option-card">
-                  <h6>Service and Salary Summary</h6>
-                  <div class="comparison-table">
-                      <table>
-                          <tr>
-                              <th>High-Three Average Salary</th>
-                              <td>${Utils.formatCurrency(retirement.highThreeAverage)}</td>
-                          </tr>
-                          <tr>
-                              <th>Service Duration</th>
-                              <td>${serviceDurationText}</td>
-                          </tr>
-                          ${sickLeaveText ? `
-                          <tr>
-                              <th>Creditable Sick Leave</th>
-                              <td>${sickLeaveText}</td>
-                          </tr>
-                          <tr>
-                              <th>Total Credited Service</th>
-                              <td>${totalServiceText}</td>
-                          </tr>
-                          ` : `
-                          <tr>
-                              <th>Total Credited Service</th>
-                              <td>${serviceDurationText}</td>
-                          </tr>
-                          `}
-                          <tr>
-                              <th>Current Age</th>
-                              <td>${formData.age} years</td>
-                          </tr>
-                          <tr>
-                              <th>Minimum Retirement Age (MRA)</th>
-                              <td>${retirement.scenarios.mraPlusTen.mraAge} years</td>
-                          </tr>
-                      </table>
-                  </div>
-              </div>
-
-              <h3>Available Retirement Options</h3>
-              ${Object.entries(retirement.scenarios)
-                  .filter(([_, scenario]) => scenario.isEligible)
-                  .map(([type, scenario]) => {
-                      let eligibilityRequirements = '';
-                      let citation = '';
-                      let policyNotes = '';
-
-                      switch(type) {
-                          case 'immediate':
-                              eligibilityRequirements = `
-                                  <h6>Eligibility Requirements</h6>
-                                  <ul>
-                                      <li>Age 62 with 5 years of service</li>
-                                      <li>Age 50 with 20 years of service</li>
-                                      <li>Any age with 25 years of service</li>
-                                  </ul>
-                                  <h6>Benefit Calculation</h6>
-                                  <ul>
-                                      <li>1.7% × first 20 years of service × high-3 average salary</li>
-                                      <li>Plus 1% × remaining years over 20 × high-3 average salary</li>
-                                      <li>Special Retirement Supplement until age 62 (if eligible)</li>
-                                  </ul>`;
-                              policyNotes = `
-                                  <div class="alert alert-info" style="margin-top: 10px; padding: 10px; background-color: #e2e8f0; border-radius: 4px;">
-                                      <strong>Policy Notes:</strong>
-                                      <ul>
-                                          <li>Eligible for FEHB and FEGLI coverage in retirement</li>
-                                          <li>Special Retirement Supplement provides additional income until age 62</li>
-                                          <li>No reduction in annuity regardless of age</li>
-                                      </ul>
-                                  </div>`;
-                              citation = '<p class="citation">Source: Foreign Service Act of 1980, as amended, 22 U.S.C. 4051-4052; 5 U.S.C. Chapter 84</p>';
-                              break;
-                          case 'mraPlusTen':
-                              eligibilityRequirements = `
-                                  <h6>Eligibility Requirements</h6>
-                                  <ul>
-                                      <li>Minimum Retirement Age with 10+ years of service</li>
-                                      <li>MRA varies from 55-57 based on birth year</li>
-                                  </ul>
-                                  <h6>Important Details</h6>
-                                  <ul>
-                                      <li>Uses 1% multiplier for all years of service (as of 2018 GTM/RET policy)</li>
-                                      <li>Reduced 5% per year if taken before age 62</li>
-                                      <li>Can postpone to reduce or eliminate reduction</li>
-                                  </ul>`;
-                              policyNotes = `
-                                  <div class="alert alert-info" style="margin-top: 10px; padding: 10px; background-color: #e2e8f0; border-radius: 4px;">
-                                      <strong>Policy Notes:</strong>
-                                      <ul>
-                                          <li>As of 2018, GTM/RET changed the multiplier from 1.7% to 1% for all years</li>
-                                          <li>Postponing benefits can help avoid age reduction</li>
-                                          <li>FEHB eligibility only if retirement is immediate (meeting age requirements)</li>
-                                          <li>No Special Retirement Supplement available</li>
-                                      </ul>
-                                  </div>`;
-                              citation = '<p class="citation">Source: 5 U.S.C. §8412(b)(1) and §8415; GTM/RET Policy Change 2018</p>';
-                              break;
-                          case 'deferred':
-                              eligibilityRequirements = `
-                                  <h6>Eligibility Requirements</h6>
-                                  <ul>
-                                      <li>5+ years of service</li>
-                                      <li>Benefits begin at age 62 (or age 65 for enhanced benefit)</li>
-                                  </ul>
-                                  <h6>Important Details</h6>
-                                  <ul>
-                                      <li>Uses 1% multiplier if starting benefits before age 65</li>
-                                      <li>Enhanced 1.7% multiplier available if waiting until age 65</li>
-                                      <li>No Special Retirement Supplement</li>
-                                      <li>No retiree health benefits</li>
-                                  </ul>`;
-                              policyNotes = `
-                                  <div class="alert alert-info" style="margin-top: 10px; padding: 10px; background-color: #e2e8f0; border-radius: 4px;">
-                                      <strong>Policy Notes:</strong>
-                                      <ul>
-                                          <li>Cannot maintain FEHB or FEGLI into retirement</li>
-                                          <li>Must wait until at least age 62 to begin receiving benefits</li>
-                                          <li>Enhanced 1.7% multiplier only available at age 65 or later</li>
-                                          <li>No cost-of-living adjustments until benefits begin</li>
-                                      </ul>
-                                  </div>`;
-                              citation = '<p class="citation">Source: 5 U.S.C. §8413(b) and §8415</p>';
-                              break;
-                          case 'tera':
-                              eligibilityRequirements = `
-                                  <h6>Eligibility Requirements</h6>
-                                  <ul>
-                                      <li>Special authority when offered</li>
-                                      <li>Minimum age ${formData.teraAge} with ${formData.teraYears} years of service</li>
-                                      <li>Uses same computation as regular retirement</li>
-                                  </ul>`;
-                              policyNotes = `
-                                  <div class="alert alert-info" style="margin-top: 10px; padding: 10px; background-color: #e2e8f0; border-radius: 4px;">
-                                      <strong>Policy Notes:</strong>
-                                      <ul>
-                                          <li>Eligible for FEHB and FEGLI coverage in retirement</li>
-                                          <li>Special Retirement Supplement available until age 62</li>
-                                          <li>Uses enhanced 1.7% multiplier for first 20 years</li>
-                                          <li>No age reduction in annuity</li>
-                                      </ul>
-                                  </div>`;
-                              citation = '<p class="citation">Source: Foreign Service Act of 1980, as amended, 22 U.S.C. 4051-4052</p>';
-                              break;
-                      }
-
-                      return `
-                          <div class="option-card">
-                              <h6>${type === 'mraPlusTen' ? 'MRA+10' : type === 'tera' ? 'V/TERA' : type.charAt(0).toUpperCase() + type.slice(1)} Retirement</h6>
-                              <div class="option-details">
-                                  ${eligibilityRequirements}
-                                  <div class="calculation-details">
-                                      <p><strong>Monthly Benefit:</strong> ${Utils.formatCurrency(scenario.monthlyAnnuity)}</p>
-                                      <p><strong>Annual Benefit:</strong> ${Utils.formatCurrency(scenario.annualAnnuity)}</p>
-
-                                      <div style="margin-top: 1rem;">
-                                          <p><strong>Net Monthly Annuity</strong></p>
-
-                                          <div style="margin: 1rem 0;">
-                                              <p><strong>With Maximum Survivor Benefit (10%)</strong></p>
-                                              <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
-                                                  <tr>
-                                                      <td>Gross Monthly Annuity</td>
-                                                      <td style="text-align: right;">${Utils.formatCurrency(scenario.monthlyAnnuity)}</td>
-                                                  </tr>
-                                                  <tr>
-                                                      <td>Survivor Benefit (10%)</td>
-                                                      <td style="text-align: right;">-${Utils.formatCurrency(scenario.monthlyAnnuity * 0.10)}</td>
-                                                  </tr>
-                                                  <tr>
-                                                      <td>Health Insurance Premium</td>
-                                                      <td style="text-align: right;">-${Utils.formatCurrency(health?.fehb?.monthly || 0)}</td>
-                                                  </tr>
-                                                  <tr style="border-top: 1px solid #e2e8f0;">
-                                                      <td><strong>Net Monthly Annuity</strong></td>
-                                                      <td style="text-align: right;"><strong>${Utils.formatCurrency(scenario.monthlyAnnuity - (scenario.monthlyAnnuity * 0.10) - (health?.fehb?.monthly || 0))}</strong></td>
-                                                  </tr>
-                                              </table>
-                                          </div>
-
-                                          <div style="margin: 1rem 0;">
-                                              <p><strong>With Reduced Survivor Benefit (5%)</strong></p>
-                                              <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
-                                                  <tr>
-                                                      <td>Gross Monthly Annuity</td>
-                                                      <td style="text-align: right;">${Utils.formatCurrency(scenario.monthlyAnnuity)}</td>
-                                                  </tr>
-                                                  <tr>
-                                                      <td>Survivor Benefit (5%)</td>
-                                                      <td style="text-align: right;">-${Utils.formatCurrency(scenario.monthlyAnnuity * 0.05)}</td>
-                                                  </tr>
-                                                  <tr>
-                                                      <td>Health Insurance Premium</td>
-                                                      <td style="text-align: right;">-${Utils.formatCurrency(health?.fehb?.monthly || 0)}</td>
-                                                  </tr>
-                                                  <tr style="border-top: 1px solid #e2e8f0;">
-                                                      <td><strong>Net Monthly Annuity</strong></td>
-                                                      <td style="text-align: right;"><strong>${Utils.formatCurrency(scenario.monthlyAnnuity - (scenario.monthlyAnnuity * 0.05) - (health?.fehb?.monthly || 0))}</strong></td>
-                                                  </tr>
-                                              </table>
-                                          </div>
-
-                                          <p style="margin-top: 0.5rem;">
-                                              <em>Note: Maximum survivor benefit provides 50% of your full annuity to your survivor, while reduced benefit provides 25%. Actual deductions may vary based on your elections.</em>
-                                          </p>
-                                      </div>
-                                  </div>
-                                  ${policyNotes}
-                                  ${citation}
-                              </div>
-                          </div>`;
-                  }).join('')}
-          </div>
-
-          <div class="retirement-notes">
-              <h5>Important Notes</h5>
-              <ul>
-                  <li>All calculations are estimates based on current policy and provided information</li>
-                  <li>Actual benefits may vary based on final service computation and other factors</li>
-                  <li>Special Retirement Supplement (SRS) eligibility and calculation:
-                      <ul>
-                          <li>Available for immediate retirement and V/TERA before age 62</li>
-                          <li>Must meet one of these criteria:
-                              <ul>
-                                  <li>Age 50+ with 20+ years of service</li>
-                                  <li>Any age with 25+ years of service</li>
-                                  <li>V/TERA retirement meeting minimum age (43) and service (10 years) requirements</li>
-                              </ul>
-                          </li>
-                          <li>SRS estimate based on career average base pay earnings (excluding locality pay) for conservative estimation</li>
-                          <li>Maximum SRS capped at Social Security maximum benefit ($3,627 for 2024)</li>
-                          <li>Actual SRS may be higher if locality pay is included in HR's final calculation</li>
-                      </ul>
-                  </li>
-                  <li>FEHB Coverage Eligibility:
-                      <ul>
-                          <li>Immediate Retirement: Eligible if covered for 5 years before retirement</li>
-                          <li>MRA+10: Only eligible if taking immediate annuity (not postponed)</li>
-                          <li>Deferred: Not eligible to continue FEHB coverage</li>
-                          <li>V/TERA: Eligible if covered for 5 years before retirement</li>
-                      </ul>
-                  </li>
-                  <li>Consider consulting with HR for official calculations and guidance</li>
-              </ul>
-          </div>`;
-      }
-  static FormManagerHelpers.updatePlanPrices() {
-      const planSelect = document.getElementById('current-plan');
-      const coverageTypeSelect = document.getElementById('coverage-type');
-
-      if (!planSelect || !coverageTypeSelect) {
-          console.warn('Required form elements not found');
-          return;
-      }
-
-      const selectedPlan = planSelect.value;
-      if (!selectedPlan) {
-          coverageTypeSelect.disabled = true;
-          return;
-      }
-
-      coverageTypeSelect.disabled = false;
-
-      // Get rates directly from HEALTH_INSURANCE_RATES
-      const planRates = window.HEALTH_INSURANCE_RATES[selectedPlan];
-      if (!planRates) {
-          console.warn('No rates found for selected plan:', selectedPlan);
-          return;
-      }
-
-      const coverageType = coverageTypeSelect.value;
-      const rateInfo = planRates[coverageType];
-
-      if (!rateInfo || typeof rateInfo.monthly !== 'number') {
-          console.warn('No rate found for coverage type:', coverageType);
-          return;
-      }
-  } catch (error) {
-      console.error('Error in updatePlanPrices:', error);
-  }
-}
-
-class FormManagerHelpers {
-    static calculateSeverance(fsGrade, fsStep, yearsService, age, post, annualLeaveBalance = 0, serviceDuration = null) {
-      // Input validation
-      if (!fsGrade || !fsStep || !yearsService || !age || !post) {
-          throw new CalculationError('Missing required inputs for severance calculation');
-      }
-
-      console.log('Calculating severance with inputs:', { 
-          fsGrade, 
-          fsStep, 
-          yearsService, 
-          age, 
-          post, 
-          annualLeaveBalance,
-          serviceDuration 
-      });
-
-      // Get base salary from salary tables
-      if (!SALARY_TABLES[fsGrade]) {
-          throw new CalculationError(`Invalid grade: ${fsGrade}`);
-      }
-
-      const stepIndex = parseInt(fsStep) - 1;
-      const baseSalary = SALARY_TABLES[fsGrade].steps[stepIndex];
-    
-      if (typeof baseSalary !== 'number' || isNaN(baseSalary)) {
-          throw new CalculationError(`Invalid salary for grade ${fsGrade} step ${fsStep}`);
-      }
-
-      console.log('Base salary:', baseSalary);
-
-      // Calculate monthly pay
-      const monthlyPay = baseSalary / 12;
-      console.log('Monthly pay:', monthlyPay);
-
-      // Use serviceDuration if available, otherwise use yearsService
-      const effectiveYearsService = serviceDuration ? serviceDuration.totalYears : yearsService;
-    
-      // Calculate severance pay (one month's pay for each year of service)
-      let severancePay = monthlyPay * effectiveYearsService;
-      console.log('Initial severance pay:', severancePay);
-
-      // Cap at one year's salary
-      severancePay = Math.min(severancePay, baseSalary);
-      console.log('Final severance pay (after cap):', severancePay);
-
-      // Calculate installments with dates (paid over three consecutive years on January 1)
-      const currentYear = new Date().getFullYear();
-      const installmentAmount = severancePay / 3;
-      const installments = [
-          {
-              amount: installmentAmount,
-              date: new Date(currentYear + 1, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-          },
-          {
-              amount: installmentAmount,
-              date: new Date(currentYear + 2, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-          },
-          {
-              amount: installmentAmount,
-              date: new Date(currentYear + 3, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-          }
-      ];
-
-      // Calculate hourly rate for annual leave payout
-      const hourlyRate = baseSalary / 2087;
-      const annualLeavePayout = hourlyRate * annualLeaveBalance;
-
-      const result = {
-          baseSalary: baseSalary,
-          monthlyPay: monthlyPay,
-          severanceAmount: severancePay,
-          installments: installments,
-          hourlyRate: hourlyRate,
-          yearsOfService: effectiveYearsService,
-          serviceDuration: serviceDuration,
-          annualLeaveHours: annualLeaveBalance,
-          annualLeavePayout: annualLeavePayout
-      };
-
-      console.log('Severance calculation result:', result);
-      return result;
-  }
-    static updatePlanPrices() {
-          try {
-              const planSelect = document.getElementById('current-plan');
-              const coverageTypeSelect = document.getElementById('coverage-type');
-            
-              if (!planSelect || !coverageTypeSelect) {
-                  console.warn('Required form elements not found');
-                  return;
-              }
-
-              const selectedPlan = planSelect.value;
-              if (!selectedPlan) {
-                  coverageTypeSelect.disabled = true;
-                  return;
-              }
-
-              coverageTypeSelect.disabled = false;
-
-              // Get rates directly from HEALTH_INSURANCE_RATES
-              const planRates = window.HEALTH_INSURANCE_RATES[selectedPlan];
-              if (!planRates) {
-                  console.warn('No rates found for selected plan:', selectedPlan);
-                  return;
-              }
-
-              const coverageType = coverageTypeSelect.value;
-              const rateInfo = planRates[coverageType];
-
-              if (!rateInfo || typeof rateInfo.monthly !== 'number') {
-                  console.warn('No rate found for coverage type:', coverageType);
-                  return;
-              }
-          } catch (error) {
-              console.error('Error in updatePlanPrices:', error);
-          }
-      }
-}
