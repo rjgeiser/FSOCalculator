@@ -3018,7 +3018,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //});
 
 function updateLifetimeReport(retirement, formData) {
-  const reportContainer = document.getElementById('report-tab');
+  const reportContainer = document.getElementById('lifetime-results');
   if (!reportContainer || !retirement) {
     console.warn("⚠️ Report container or retirement data missing");
     return;
