@@ -298,7 +298,7 @@ function calculateScenario(highThreeAverage, yearsService, currentAge, type, isI
     // Get MRA for the employee's age
     const mraAgeRaw = getMRA(currentAge);
     const mraAge = Math.min(mraAgeRaw, 57); // cap per FSPS
-    const mraDisplay = formatMRA(mraAgeRaw); // use raw for display, but capped for logic
+    const formatMRA(getMRA(formData.age)) = formatMRA(mraAgeRaw); // use raw for display, but capped for logic
 
 
     // Get current grade
@@ -333,7 +333,7 @@ function calculateScenario(highThreeAverage, yearsService, currentAge, type, isI
             
             if (currentAge < mraAge) {
                 // Not yet eligible to collect, show future scenarios
-                description = `MRA+10 retirement (eligible to begin at age ${mraDisplay})`;
+                description = `MRA+10 retirement (eligible to begin at age ${formatMRA(getMRA(formData.age))})`;
                 // Calculate reduction if starting at MRA
                 const yearsUnder62FromMRA = 62 - mraAge;
                 mraReduction = 0.05 * yearsUnder62FromMRA;
@@ -480,7 +480,7 @@ function calculateScenario(highThreeAverage, yearsService, currentAge, type, isI
         description,
         supplementalAnnuity: supplementalAnnuity || 0,
         monthlySupplemental: monthlySupplemental || 0,
-        mraDisplay,
+        formatMRA(getMRA(formData.age)),
         mraReduction,
         totalServiceYears: effectiveYearsService,
         sickLeaveServiceDuration: sickLeaveServiceDuration || null,
@@ -2558,7 +2558,7 @@ class Calculator {
                         </tr>
                         <tr>
                             <th>Minimum Retirement Age (MRA)</th>
-                            <td>${mraDisplay}</td>
+                            <td>${formatMRA(getMRA(formData.age))}</td>
                         </tr>
                     </table>
                 </div>
