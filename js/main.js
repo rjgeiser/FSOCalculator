@@ -3042,12 +3042,16 @@ document.addEventListener('DOMContentLoaded', function() {
 //});
 
 function updateLifetimeReport(retirement, formData) {
+  console.log("🧾 Running updateLifetimeReport");
+  console.log("📋 formData:", formData);
+  console.log("📦 retirement data:", retirement);
+
   const reportContainer = document.getElementById('lifetime-results');
   if (!reportContainer || !retirement) return;
 
   const maxAge = 85;
   const currentAge = parseInt(formData.age, 10) || 57;
-  const service = parseInt(formData.yearsService, 10) || 0;
+  const service = parseFloat(formData.yearsService || 0);
   const grade = formData.fsGrade || '';
   const teraMinAge = parseInt(formData.teraAge || 50, 10);
   const teraMinYears = parseInt(formData.teraYears || 20, 10);
@@ -3058,73 +3062,72 @@ function updateLifetimeReport(retirement, formData) {
   const notesIneligible = [];
 
   const labelMap = {
-    full: "Immediate",
+    immediate: "Immediate",
     tera: "V/TERA",
-    mra10: "MRA+10",
+    mraPlusTen: "MRA+10",
     deferred: "Deferred"
   };
-    
-    console.log("🧾 Running updateLifetimeReport");
-    console.log("📋 formData:", formData);
-    console.log("📦 retirement data:", retirement);
-    
+
   const eligibilityRules = {
-    full: (age, service, grade) => {
-      let reasons = [];
+    immediate: (age, service, grade) => {
+      const reasons = [];
       if (age < 50) reasons.push("must be at least 50 years old");
       if (service < 20) reasons.push("requires 20+ years of service");
       if (!/^FS-0[1-3]$/.test(grade)) reasons.push("requires grade FS-01 or higher");
       return reasons;
     },
     tera: (age, service) => {
-      let reasons = [];
-      if (age < teraMinAge) reasons.push(`must be at least ${teraMinAge}`);
+      const reasons = [];
+      if (age < teraMinAge) reasons.push(`must be at least ${teraMinAge} years old`);
       if (service < teraMinYears) reasons.push(`requires ${teraMinYears}+ years of service`);
       return reasons;
     },
-    mra10: (age, service) => {
-      let reasons = [];
+    mraPlusTen: (age, service) => {
+      const reasons = [];
       if (age < 57) reasons.push("must reach MRA (57)");
       if (service < 10) reasons.push("requires 10+ years of service");
       return reasons;
     },
-    deferred: (age, service) => {
+    deferred: (_, service) => {
       return service < 5 ? ["requires at least 5 years of creditable service"] : [];
     }
   };
 
   for (const [key, data] of Object.entries(retirement)) {
-    if (!data || typeof data !== "object") continue;
-
-    const label = labelMap[key] || data.label || key;
+    const label = labelMap[key] || key;
     const annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;
     const startAge = parseInt(data.startingAge, 10) || currentAge;
     const years = Math.max(0, maxAge - startAge);
     const total = Math.round(annual * years);
 
     const assumptions = `$${annual.toLocaleString()}/yr × ${years} years starting at age ${startAge}`;
-
-    console.log(`🔹 ${label}: $${annual} x ${years} years = $${total} (${data.eligible ? "Eligible" : "Ineligible"})`);
-
-    const rowHTML = `
+    const row = `
       <tr>
         <td>${label}</td>
         <td>$${total.toLocaleString()}</td>
       </tr>
     `;
 
-    const reasonList = eligibilityRules[key] ? eligibilityRules[key](currentAge, service, grade) : [];
+    const reasonList = eligibilityRules[key]?.(currentAge, service, grade) || [];
 
-    if (reasonList.length === 0) {
-      tbodyEligible.push(rowHTML);
+    const isActuallyEligible = data?.eligible === true && annual > 0;
+    const isActuallyIneligible = reasonList.length > 0 || annual === 0;
+
+    if (isActuallyEligible) {
+      tbodyEligible.push(row);
       notesEligible.push(`<strong>${label}:</strong> ${assumptions}`);
-    } else {
-      tbodyIneligible.push(rowHTML);
-      notesIneligible.push(`<strong>${label}:</strong> Ineligible because ${reasonList.join(", ")} (${assumptions})`);
+    }
+
+    if (isActuallyIneligible) {
+      tbodyIneligible.push(row);
+      const reasons = reasonList.length
+        ? `Ineligible because ${reasonList.join(", ")}`
+        : "Ineligible (missing data or $0 annuity)";
+      notesIneligible.push(`<strong>${label}:</strong> ${reasons} (${assumptions})`);
     }
   }
 
-  // Add Severance, if applicable
+  // Add Severance if present
   if (
     window.calculatorResults?.severance?.grossSeverance &&
     typeof window.calculatorResults.severance.grossSeverance === "number"
@@ -3141,10 +3144,7 @@ function updateLifetimeReport(retirement, formData) {
 
   reportContainer.innerHTML = `
     <div class="form-section">
-      <h3>Lifetime Benefits Report (to Age 85)</h3>
-
-      <div class="option-card">
-        <h4>Eligible Retirement Options</h4>
+      <h3>Eligible Retirement Options</h3>
         <div class="comparison-table">
           <table>
             <thead><tr><th>Type</th><th>Total Value</th></tr></thead>
@@ -3154,10 +3154,7 @@ function updateLifetimeReport(retirement, formData) {
         <div class="form-text">
           <strong>Assumptions:</strong><br>${notesEligible.join('<br>')}
         </div>
-      </div>
-
-      <div class="option-card">
-        <h4>Ineligible Options (for Comparison Only)</h4>
+        <h3>Ineligible Options (for Comparison Only)</h3>
         <div class="comparison-table">
           <table>
             <thead><tr><th>Type</th><th>Total Value</th></tr></thead>
@@ -3168,7 +3165,6 @@ function updateLifetimeReport(retirement, formData) {
           <strong>Reasons for Ineligibility and Assumptions:</strong><br>${notesIneligible.join('<br>')}
         </div>
       </div>
-    </div>
   `;
 }
 
