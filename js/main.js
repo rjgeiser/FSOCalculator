@@ -3111,7 +3111,6 @@ function updateLifetimeReport(retirement, formData) {
       const s3 = parseFloat(formData.salaryYear3 || 0);
       let average = (s1 + s2 + s3) / 3;
 
-      // If salary years are missing, estimate from grade/step
       if (average === 0 && typeof lookupBaseSalary === "function") {
         const base = lookupBaseSalary(formData.fsGrade, formData.fsStep);
         average = base || 80000;
@@ -3125,17 +3124,26 @@ function updateLifetimeReport(retirement, formData) {
       };
       const multiplier = multiplierMap[key] || 0.01;
       const years = parseFloat(formData.yearsService || 0);
-
       annual = Math.round(average * years * multiplier);
       console.log(`🔁 Recalculated ${label} annuity for ineligible scenario: $${annual}`);
     }
 
-    const startAge = parseInt(data.startingAge, 10) || currentAge;
+    let startAge = parseInt(data.startingAge, 10);
+    if (!startAge) {
+      if (key === "mraPlusTen") startAge = 57;
+      else if (key === "deferred") startAge = 62;
+      else startAge = currentAge;
+    }
+
     const years = Math.max(0, maxAge - startAge);
     const total = Math.round(annual * years);
-    const assumptions = `$${annual.toLocaleString()}/yr × ${years} years starting at age ${startAge}`;
-    const row = `<tr><td>${label}</td><td>$${total.toLocaleString()}</td></tr>`;
 
+    let assumptions = `$${annual.toLocaleString()}/yr × ${years} years starting at age ${startAge}`;
+    if (data.supplementalAnnuity > 0) {
+      assumptions += " (Includes SRS until age 62)";
+    }
+
+    const row = `<tr><td>${label}</td><td>$${total.toLocaleString()}</td></tr>`;
     const reasonList = eligibilityRules[key]?.(currentAge, service, grade) || [];
 
     const explicitlyEligible = data.eligible === true || data.isEligible === true;
@@ -3154,7 +3162,6 @@ function updateLifetimeReport(retirement, formData) {
     }
   }
 
-  // Add Severance if applicable
   if (window.calculatorResults?.severance?.grossSeverance) {
     const severance = window.calculatorResults.severance.grossSeverance;
     tbodyEligible.unshift(`<tr><td>Severance</td><td>$${severance.toLocaleString()}</td></tr>`);
@@ -3167,23 +3174,29 @@ function updateLifetimeReport(retirement, formData) {
       <h3>Eligible Retirement Options</h3>
       <div class="comparison-table">
         <table>
-          <thead><tr><th>Type</th><th>Total Value</th></tr></thead>
-          <tbody>${tbodyEligible.join('')}</tbody>
+          <thead>
+              <tr>
+                  <th>Eligible Retirement Options</th>
+                  <th>Total Value (to age ${maxAge})</th>
+              </tr>
+          </thead>
+          <tbody>${tbodyEligible.join('')}
+          </tbody>
         </table>
-          <div class="form-text">
-            <strong>Assumptions:</strong><br>${notesEligible.join('<br>')}
-        </div>
       </div>
 
       <h3>Ineligible Options (for Comparison Only)</h3>
       <div class="comparison-table">
         <table>
-          <thead><tr><th>Type</th><th>Total Value</th></tr></thead>
+          <thead>
+              <tr>
+                  <th>Ineligible Retirement Options</th>
+                  <th>Potential Value (if eligible)</th>
+              </tr>
+          </thead>
           <tbody>${tbodyIneligible.join('')}</tbody>
         </table>
-          <div class="form-text">
-            <strong>Reasons for Ineligibility and Assumptions:</strong><br>${notesIneligible.join('<br>')}
-        </div>
+          <div class="report-notes"><h3>Assumptions</h3><ul><li>${[...notesEligible, ...notesIneligible].join("</li><li>")}</li></ul></div>
       </div>
     </div>
   `;
