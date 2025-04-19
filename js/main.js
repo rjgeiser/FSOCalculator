@@ -2969,14 +2969,14 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 //Add light and dark mode toggle
-document.addEventListener('DOMContentLoaded', () => {
-  const toggle = document.getElementById('themeToggle');
-  if (toggle) {
-    toggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-      toggle.textContent = document.body.classList.contains('dark-mode')
-        ? '☀️ Light Mode'
-        : '🌙 Dark Mode';
-    });
-  }
-});
+//document.addEventListener('DOMContentLoaded', () => {
+ // const toggle = document.getElementById('themeToggle');
+ // if (toggle) {
+ //   toggle.addEventListener('click', () => {
+ //     document.body.classList.toggle('dark-mode');
+ //     toggle.textContent = document.body.classList.contains('dark-mode')
+ //       ? '☀️ Light Mode'
+ //       : '🌙 Dark Mode';
+ //   });
+ // }
+//});
