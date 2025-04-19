@@ -2713,40 +2713,6 @@ class Calculator {
     }
 
 // Function to update plan prices based on selected enrollment type
-static updatePlanPrices() {
-    const planSelect = document.getElementById('current-plan');
-    const coverageTypeSelect = document.getElementById('coverage-type');
-    
-    if (!planSelect || !coverageTypeSelect) {
-        console.warn('Required form elements not found');
-        return;
-    }
-
-    const selectedPlan = planSelect.value;
-    if (!selectedPlan) {
-        coverageTypeSelect.disabled = true;
-        return;
-    }
-
-    coverageTypeSelect.disabled = false;
-
-    // Get rates directly from HEALTH_INSURANCE_RATES
-    const planRates = window.HEALTH_INSURANCE_RATES[selectedPlan];
-    if (!planRates) {
-        console.warn('No rates found for selected plan:', selectedPlan);
-        return;
-    }
-
-    const coverageType = coverageTypeSelect.value;
-    const rateInfo = planRates[coverageType];
-
-    if (!rateInfo || typeof rateInfo.monthly !== 'number') {
-        console.warn('No rate found for coverage type:', coverageType);
-        return;
-    }
-} catch (error) {
-    console.error('Error in updatePlanPrices:', error);
-}
 };
 
 function initializeAfterLoad() {
