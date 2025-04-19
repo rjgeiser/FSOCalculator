@@ -480,7 +480,7 @@ function calculateScenario(highThreeAverage, yearsService, currentAge, type, isI
         description,
         supplementalAnnuity: supplementalAnnuity || 0,
         monthlySupplemental: monthlySupplemental || 0,
-        mraDiplay,
+        mraDisplay,
         mraReduction,
         totalServiceYears: effectiveYearsService,
         sickLeaveServiceDuration: sickLeaveServiceDuration || null,
