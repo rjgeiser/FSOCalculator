@@ -1726,7 +1726,7 @@ function generateHealthInsuranceRecommendations(fehbRates, cobraCosts, acaEstima
     
     // Compare COBRA vs ACA costs
     if (cobraCosts.monthly < acaEstimate.monthly) {
-        recommendations.push("COBRA coverage may be more cost-effective initially, providing 18 months of your current coverage.");
+        recommendations.push("COBRA coverage may be more cost-effective initially (calculated as your Total Monthly Premium [Employee + Employer] + 2% Admin Fee), providing 18 months of your current coverage.");
     } else {
         recommendations.push("ACA marketplace plans may offer more affordable monthly premiums than COBRA.");
     }
@@ -2429,12 +2429,12 @@ class Calculator {
                             <td>${Utils.formatCurrency(health.fehb.monthly)}</td>
                         </tr>
                         <tr>
-                            <th>Total Monthly Premium (Employee + Employer)</th>
+                            <th>Total Monthly Premium</th>
                             <td>${Utils.formatCurrency(health.aca.totalPremiumBase)}</td>
                         </tr>
                         <tr>
                             <th>COBRA Monthly Premium</th>
-                            <td>${Utils.formatCurrency(health.cobra.monthly)} (Total Premium + 2% Admin Fee)</td>
+                            <td>${Utils.formatCurrency(health.cobra.monthly)}</td>
                         </tr>
                         <tr>
                             <th>COBRA Duration</th>
