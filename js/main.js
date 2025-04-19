@@ -3097,15 +3097,13 @@ function updateLifetimeReport(retirement, formData) {
     const years = Math.max(0, maxAge - startAge);
     const total = Math.round(annual * years);
     const assumptions = `$${annual.toLocaleString()}/yr × ${years} years starting at age ${startAge}`;
-
     const row = `<tr><td>${label}</td><td>$${total.toLocaleString()}</td></tr>`;
+
     const reasonList = eligibilityRules[key]?.(currentAge, service, grade) || [];
 
     const explicitlyEligible = data.isEligible === true;
-    const isMRAPlusTen = key === "mraPlusTen";
-    const showAsEligible =
-      explicitlyEligible ||
-      (isMRAPlusTen && data.description?.includes("eligible to begin at age"));
+    const deferredFlag = key === "mraPlusTen" && data.description?.includes("eligible to begin at age");
+    const showAsEligible = explicitlyEligible || deferredFlag;
 
     if (showAsEligible) {
       tbodyEligible.push(row);
@@ -3114,12 +3112,12 @@ function updateLifetimeReport(retirement, formData) {
       tbodyIneligible.push(row);
       const reasons = reasonList.length
         ? `Ineligible because ${reasonList.join(", ")}`
-        : "Ineligible (missing data or $0 annuity)";
-      notesIneligible.push(`<strong>${label}:</strong> ${reasons} (${assumptions})`);
+        : "Ineligible (missing data)";
+      notesIneligible.push(`<strong>${label}:</strong> ${reasons} — but would be ${assumptions}`);
     }
   }
 
-  // Add Severance if present
+  // Add Severance if applicable
   if (window.calculatorResults?.severance?.grossSeverance) {
     const severance = window.calculatorResults.severance.grossSeverance;
     tbodyEligible.unshift(`<tr><td>Severance</td><td>$${severance.toLocaleString()}</td></tr>`);
