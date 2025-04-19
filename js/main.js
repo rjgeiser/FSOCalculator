@@ -3109,9 +3109,9 @@ function updateLifetimeReport(retirement, formData) {
     `;
 
     const reasonList = eligibilityRules[key]?.(currentAge, service, grade) || [];
-
-    const isActuallyEligible = annual > 0;
-    const isActuallyIneligible = annual === 0 || reasonList.length > 0;
+    
+    const isActuallyEligible = annual > 0 && reasonList.length === 0;
+    const isActuallyIneligible = !isActuallyEligible;
 
     if (isActuallyEligible) {
       tbodyEligible.push(row);
@@ -3154,6 +3154,7 @@ function updateLifetimeReport(retirement, formData) {
         <div class="form-text">
           <strong>Assumptions:</strong><br>${notesEligible.join('<br>')}
         </div>
+       
         <h3>Ineligible Options (for Comparison Only)</h3>
         <div class="comparison-table">
           <table>
