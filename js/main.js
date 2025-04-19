@@ -3019,7 +3019,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateLifetimeReport(retirement, formData) {
   const reportContainer = document.getElementById('report-tab');
-  if (!reportContainer || !retirement) return;
+  if (!reportContainer || !retirement) {
+    console.warn("⚠️ Report container or retirement data missing");
+    return;
+  }
+
+  console.log("🧾 Running updateLifetimeReport");
+  console.log("📋 formData:", formData);
+  console.log("📦 retirement data:", retirement);
 
   const maxAge = 85;
   const currentAge = parseInt(formData.age, 10) || 57;
@@ -3034,6 +3041,8 @@ function updateLifetimeReport(retirement, formData) {
     const startAge = parseInt(data.startingAge, 10) || currentAge;
     const years = Math.max(0, maxAge - startAge);
     const total = Math.round(annual * years);
+
+    console.log(`🔹 ${label}: $${annual} x ${years} years = $${total} (${data.eligible ? "Eligible" : "Ineligible"})`);
 
     const formattedRow = `
       <tr>
@@ -3065,6 +3074,7 @@ function updateLifetimeReport(retirement, formData) {
     typeof window.calculatorResults.severance.grossSeverance === "number"
   ) {
     const severance = window.calculatorResults.severance.grossSeverance;
+    console.log(`💰 Severance included: $${severance}`);
     tbodyEligible.unshift(`
       <tr>
         <td>Severance <br><small>(One-time payment)</small></td>
@@ -3073,43 +3083,50 @@ function updateLifetimeReport(retirement, formData) {
         <td>$${severance.toLocaleString()}</td>
       </tr>
     `);
+  } else {
+    console.log("ℹ️ No severance value detected.");
   }
 
   reportContainer.innerHTML = `
-    <h3>Lifetime Benefits Report (to Age 85)</h3>
 
-    <h4>Eligible Retirement Options</h4>
-    <table class="comparison-table">
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Annual Annuity</th>
-          <th>Years Paid</th>
-          <th>Total Value</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tbodyEligible.join('')}
-      </tbody>
-    </table>
+        <div class="retirement-options">
+            <div class="option-card">
+                <h3>Eligible Retirement Options</h3>
+                <div class="comparison-table">
+                    <table>
+                          <thead>
+                            <tr>
+                              <th>Type</th>
+                              <th>Annual Annuity</th>
+                              <th>Years Paid</th>
+                              <th>Total Value</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${tbodyEligible.join('')}
+                          </tbody>
+                        </table>
+                    </div>
 
-    <h4>Ineligible Options (for Comparison Only)</h4>
-    <table class="comparison-table">
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Annual Annuity</th>
-          <th>Years Assumed</th>
-          <th>Total Value</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tbodyIneligible.join('')}
-      </tbody>
-    </table>
-
-    <p class="form-text">
-      <strong>Note:</strong> Eligible options reflect actual retirement benefits based on user qualifications. Ineligible options are shown for comparison purposes only and assume payout to age 85.
-    </p>
+                <h3>Ineligible Options (for Comparison Only)</h3>
+                <div class="comparison-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Type</th>
+                          <th>Annual Annuity</th>
+                          <th>Years Assumed</th>
+                          <th>Total Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${tbodyIneligible.join('')}
+                      </tbody>
+                    </table>
+                </div>
+                <p class="form-text">
+                  <strong>Note:</strong> Eligible options reflect actual retirement benefits based on user qualifications. Ineligible options are shown for comparison purposes only and assume payout to age 85.
+                </p>
   `;
 }
+
