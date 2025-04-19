@@ -3100,49 +3100,49 @@ function updateLifetimeReport(retirement, formData) {
     console.log("ℹ️ No severance value detected.");
   }
 
-  reportContainer.innerHTML = `
-    <div class="form-section">
-        <h3>Severance Pay Summary</h3>
-            <div class="option-card">
-                <h3>Eligible Retirement Options</h3>
-                <div class="comparison-table">
-                    <table>
-                          <thead>
-                            <tr>
-                              <th>Type</th>
-                              <th>Annual Annuity</th>
-                              <th>Years Paid</th>
-                              <th>Total Value</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            ${tbodyEligible.join('')}
-                          </tbody>
-                        </table>
-                    </div>
+reportContainer.innerHTML = `
+  <div class="form-section">
+    <h3>Lifetime Benefits Report (to Age 85)</h3>
+    
+    <div class="option-card">
+      <h4>Eligible Retirement Options</h4>
+      <div class="comparison-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Annual Annuity</th>
+              <th>Years Paid</th>
+              <th>Total Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tbodyEligible.join('')}
+          </tbody>
+        </table>
+      </div>
 
-                <h3>Ineligible Options (for Comparison Only)</h3>
-                <div class="comparison-table">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Type</th>
-                          <th>Annual Annuity</th>
-                          <th>Years Assumed</th>
-                          <th>Total Value</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${tbodyIneligible.join('')}
-                      </tbody>
-                    </table>
-                </div>
-                <p class="form-text">
-                  <strong>Note:</strong> Eligible options reflect actual retirement benefits based on user qualifications. Ineligible options are shown for comparison purposes only and assume payout to age 85.
-                </p>
-            </div>
-        </div>
+      <h4>Ineligible Options (for Comparison Only)</h4>
+      <div class="comparison-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Annual Annuity</th>
+              <th>Years Assumed</th>
+              <th>Total Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tbodyIneligible.join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <p class="form-text">
+        <strong>Note:</strong> Eligible options reflect actual retirement benefits based on user qualifications. Ineligible options are shown for comparison purposes only and assume payout to age 85.
+      </p>
     </div>
+  </div>
   `;
-}
 
