@@ -333,7 +333,7 @@ function calculateScenario(highThreeAverage, yearsService, currentAge, type, isI
             
             if (currentAge < mraAge) {
                 // Not yet eligible to collect, show future scenarios
-                description = `MRA+10 retirement (eligible to begin at age ${formatMRA(getMRA(formData.age))})`;
+                description = `MRA+10 retirement (eligible to begin at age ${mraDisplay})`;
                 // Calculate reduction if starting at MRA
                 const yearsUnder62FromMRA = 62 - mraAge;
                 mraReduction = 0.05 * yearsUnder62FromMRA;
