@@ -3148,7 +3148,6 @@ function updateLifetimeReport(retirement, formData) {
         : "Ineligible (missing data)";
       notesIneligible.push(`<strong>${label}:</strong> ${reasons} — but would be ${assumptions}`);
     }
-  }
 
   // Add Severance if applicable
   if (window.calculatorResults?.severance?.grossSeverance) {
