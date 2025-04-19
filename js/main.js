@@ -1132,88 +1132,6 @@ const ACA_COVERAGE_FACTORS = {
 };
 
 // Calculate Severance Pay
-function FormManagerHelpers.calculateSeverance(fsGrade, fsStep, yearsService, age, post, annualLeaveBalance = 0, serviceDuration = null) {
-    // Input validation
-    if (!fsGrade || !fsStep || !yearsService || !age || !post) {
-        throw new CalculationError('Missing required inputs for severance calculation');
-    }
-
-    console.log('Calculating severance with inputs:', { 
-        fsGrade, 
-        fsStep, 
-        yearsService, 
-        age, 
-        post, 
-        annualLeaveBalance,
-        serviceDuration 
-    });
-
-    // Get base salary from salary tables
-    if (!SALARY_TABLES[fsGrade]) {
-        throw new CalculationError(`Invalid grade: ${fsGrade}`);
-    }
-
-    const stepIndex = parseInt(fsStep) - 1;
-    const baseSalary = SALARY_TABLES[fsGrade].steps[stepIndex];
-    
-    if (typeof baseSalary !== 'number' || isNaN(baseSalary)) {
-        throw new CalculationError(`Invalid salary for grade ${fsGrade} step ${fsStep}`);
-    }
-
-    console.log('Base salary:', baseSalary);
-
-    // Calculate monthly pay
-    const monthlyPay = baseSalary / 12;
-    console.log('Monthly pay:', monthlyPay);
-
-    // Use serviceDuration if available, otherwise use yearsService
-    const effectiveYearsService = serviceDuration ? serviceDuration.totalYears : yearsService;
-    
-    // Calculate severance pay (one month's pay for each year of service)
-    let severancePay = monthlyPay * effectiveYearsService;
-    console.log('Initial severance pay:', severancePay);
-
-    // Cap at one year's salary
-    severancePay = Math.min(severancePay, baseSalary);
-    console.log('Final severance pay (after cap):', severancePay);
-
-    // Calculate installments with dates (paid over three consecutive years on January 1)
-    const currentYear = new Date().getFullYear();
-    const installmentAmount = severancePay / 3;
-    const installments = [
-        {
-            amount: installmentAmount,
-            date: new Date(currentYear + 1, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-        },
-        {
-            amount: installmentAmount,
-            date: new Date(currentYear + 2, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-        },
-        {
-            amount: installmentAmount,
-            date: new Date(currentYear + 3, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-        }
-    ];
-
-    // Calculate hourly rate for annual leave payout
-    const hourlyRate = baseSalary / 2087;
-    const annualLeavePayout = hourlyRate * annualLeaveBalance;
-
-    const result = {
-        baseSalary: baseSalary,
-        monthlyPay: monthlyPay,
-        severanceAmount: severancePay,
-        installments: installments,
-        hourlyRate: hourlyRate,
-        yearsOfService: effectiveYearsService,
-        serviceDuration: serviceDuration,
-        annualLeaveHours: annualLeaveBalance,
-        annualLeavePayout: annualLeavePayout
-    };
-
-    console.log('Severance calculation result:', result);
-    return result;
-}
 
 // Add getMRA function before calculateScenario
 function getMRA(currentAge) {
@@ -1689,42 +1607,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    function FormManagerHelpers.updatePlanPrices() {
-        try {
-            const planSelect = document.getElementById('current-plan');
-            const coverageTypeSelect = document.getElementById('coverage-type');
-            
-            if (!planSelect || !coverageTypeSelect) {
-                console.warn('Required form elements not found');
-                return;
-            }
-
-            const selectedPlan = planSelect.value;
-            if (!selectedPlan) {
-                coverageTypeSelect.disabled = true;
-                return;
-            }
-
-            coverageTypeSelect.disabled = false;
-
-            // Get rates directly from HEALTH_INSURANCE_RATES
-            const planRates = window.HEALTH_INSURANCE_RATES[selectedPlan];
-            if (!planRates) {
-                console.warn('No rates found for selected plan:', selectedPlan);
-                return;
-            }
-
-            const coverageType = coverageTypeSelect.value;
-            const rateInfo = planRates[coverageType];
-
-            if (!rateInfo || typeof rateInfo.monthly !== 'number') {
-                console.warn('No rate found for coverage type:', coverageType);
-                return;
-            }
-        } catch (error) {
-            console.error('Error in updatePlanPrices:', error);
-        }
-    }
 
     // Initialize form elements with proper timing
     document.addEventListener('DOMContentLoaded', function() {
@@ -2999,4 +2881,125 @@ class FormManagerHelpers {
   } catch (error) {
       console.error('Error in updatePlanPrices:', error);
   }
+}
+
+class FormManagerHelpers {
+    static calculateSeverance(fsGrade, fsStep, yearsService, age, post, annualLeaveBalance = 0, serviceDuration = null) {
+      // Input validation
+      if (!fsGrade || !fsStep || !yearsService || !age || !post) {
+          throw new CalculationError('Missing required inputs for severance calculation');
+      }
+
+      console.log('Calculating severance with inputs:', { 
+          fsGrade, 
+          fsStep, 
+          yearsService, 
+          age, 
+          post, 
+          annualLeaveBalance,
+          serviceDuration 
+      });
+
+      // Get base salary from salary tables
+      if (!SALARY_TABLES[fsGrade]) {
+          throw new CalculationError(`Invalid grade: ${fsGrade}`);
+      }
+
+      const stepIndex = parseInt(fsStep) - 1;
+      const baseSalary = SALARY_TABLES[fsGrade].steps[stepIndex];
+    
+      if (typeof baseSalary !== 'number' || isNaN(baseSalary)) {
+          throw new CalculationError(`Invalid salary for grade ${fsGrade} step ${fsStep}`);
+      }
+
+      console.log('Base salary:', baseSalary);
+
+      // Calculate monthly pay
+      const monthlyPay = baseSalary / 12;
+      console.log('Monthly pay:', monthlyPay);
+
+      // Use serviceDuration if available, otherwise use yearsService
+      const effectiveYearsService = serviceDuration ? serviceDuration.totalYears : yearsService;
+    
+      // Calculate severance pay (one month's pay for each year of service)
+      let severancePay = monthlyPay * effectiveYearsService;
+      console.log('Initial severance pay:', severancePay);
+
+      // Cap at one year's salary
+      severancePay = Math.min(severancePay, baseSalary);
+      console.log('Final severance pay (after cap):', severancePay);
+
+      // Calculate installments with dates (paid over three consecutive years on January 1)
+      const currentYear = new Date().getFullYear();
+      const installmentAmount = severancePay / 3;
+      const installments = [
+          {
+              amount: installmentAmount,
+              date: new Date(currentYear + 1, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+          },
+          {
+              amount: installmentAmount,
+              date: new Date(currentYear + 2, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+          },
+          {
+              amount: installmentAmount,
+              date: new Date(currentYear + 3, 0, 1).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+          }
+      ];
+
+      // Calculate hourly rate for annual leave payout
+      const hourlyRate = baseSalary / 2087;
+      const annualLeavePayout = hourlyRate * annualLeaveBalance;
+
+      const result = {
+          baseSalary: baseSalary,
+          monthlyPay: monthlyPay,
+          severanceAmount: severancePay,
+          installments: installments,
+          hourlyRate: hourlyRate,
+          yearsOfService: effectiveYearsService,
+          serviceDuration: serviceDuration,
+          annualLeaveHours: annualLeaveBalance,
+          annualLeavePayout: annualLeavePayout
+      };
+
+      console.log('Severance calculation result:', result);
+      return result;
+  }
+    static updatePlanPrices() {
+          try {
+              const planSelect = document.getElementById('current-plan');
+              const coverageTypeSelect = document.getElementById('coverage-type');
+            
+              if (!planSelect || !coverageTypeSelect) {
+                  console.warn('Required form elements not found');
+                  return;
+              }
+
+              const selectedPlan = planSelect.value;
+              if (!selectedPlan) {
+                  coverageTypeSelect.disabled = true;
+                  return;
+              }
+
+              coverageTypeSelect.disabled = false;
+
+              // Get rates directly from HEALTH_INSURANCE_RATES
+              const planRates = window.HEALTH_INSURANCE_RATES[selectedPlan];
+              if (!planRates) {
+                  console.warn('No rates found for selected plan:', selectedPlan);
+                  return;
+              }
+
+              const coverageType = coverageTypeSelect.value;
+              const rateInfo = planRates[coverageType];
+
+              if (!rateInfo || typeof rateInfo.monthly !== 'number') {
+                  console.warn('No rate found for coverage type:', coverageType);
+                  return;
+              }
+          } catch (error) {
+              console.error('Error in updatePlanPrices:', error);
+          }
+      }
 }
