@@ -3110,8 +3110,8 @@ function updateLifetimeReport(retirement, formData) {
 
     const reasonList = eligibilityRules[key]?.(currentAge, service, grade) || [];
 
-    const isActuallyEligible = data?.eligible === true && annual > 0;
-    const isActuallyIneligible = reasonList.length > 0 || annual === 0;
+    const isActuallyEligible = annual > 0;
+    const isActuallyIneligible = annual === 0 || reasonList.length > 0;
 
     if (isActuallyEligible) {
       tbodyEligible.push(row);
