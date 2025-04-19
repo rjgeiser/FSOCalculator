@@ -1414,12 +1414,6 @@ SALARY_TABLES.SFS = {
     })
 };
 
-// Update getFormData function to handle SFS ranks
-
-
-//Handles form submission and prevents default behavior
-}
-
     // Service Duration Validation Functions
     function validateServiceDuration() {
         try {
