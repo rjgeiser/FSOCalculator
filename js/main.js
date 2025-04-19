@@ -1952,6 +1952,7 @@ try {
     // Calculate all benefits
     const severanceResult = Calculator.calculateSeverance(formData);
     const retirementResult = Calculator.calculateRetirement(formData);
+    updateLifetimeReport(retirementResult, formData);
     const healthResult = Calculator.calculateHealth(formData);
 
     console.log('Health Result:', healthResult); // Debug log
@@ -2980,3 +2981,43 @@ document.addEventListener('DOMContentLoaded', function() {
  //   });
  // }
 //});
+
+function updateLifetimeReport(retirement, formData) {
+  const tbody = document.querySelector('#lifetime-report-table tbody');
+  if (!tbody || !retirement) return;
+
+  const retirementAge = parseInt(formData.age, 10) || 57;
+  const maxAge = 85;
+  const rows = [];
+
+  for (const [key, data] of Object.entries(retirement)) {
+    const label = `${data.label || key} <br><small>(Starts at age ${data.startingAge || retirementAge})</small>`;
+    const annual = data.annualAnnuity || 0;
+    const startAge = parseInt(data.startingAge, 10) || retirementAge;
+    const years = Math.max(0, maxAge - startAge);
+    const total = Math.round(annual * years);
+
+    rows.push(`
+      <tr>
+        <td>${label}</td>
+        <td>$${annual.toLocaleString()}</td>
+        <td>${years}</td>
+        <td>$${total.toLocaleString()}</td>
+      </tr>
+    `);
+  }
+
+  if (window.calculatorResults?.severance?.grossSeverance) {
+    const severance = window.calculatorResults.severance.grossSeverance;
+    rows.unshift(`
+      <tr>
+        <td>Severance <br><small>(One-time payment)</small></td>
+        <td>$${severance.toLocaleString()}</td>
+        <td>1</td>
+        <td>$${severance.toLocaleString()}</td>
+      </tr>
+    `);
+  }
+
+  tbody.innerHTML = rows.join('');
+}
