@@ -1987,7 +1987,7 @@ try {
     // Calculate all benefits
     const severanceResult = Calculator.calculateSeverance(formData);
     const retirementResult = Calculator.calculateRetirement(formData);
-    updateLifetimeReport(retirementResult, formData);
+    updateLifetimeReport(results.retirementOptions, formData);
     const healthResult = Calculator.calculateHealth(formData);
 
     console.log('Health Result:', healthResult); // Debug log
@@ -3088,8 +3088,8 @@ function updateLifetimeReport(retirement, formData) {
   }
 
   reportContainer.innerHTML = `
-
-        <div class="retirement-options">
+    <div class="form-section">
+        <h3>Severance Pay Summary</h3>
             <div class="option-card">
                 <h3>Eligible Retirement Options</h3>
                 <div class="comparison-table">
@@ -3127,6 +3127,9 @@ function updateLifetimeReport(retirement, formData) {
                 <p class="form-text">
                   <strong>Note:</strong> Eligible options reflect actual retirement benefits based on user qualifications. Ineligible options are shown for comparison purposes only and assume payout to age 85.
                 </p>
+            </div>
+        </div>
+    </div>
   `;
 }
 
