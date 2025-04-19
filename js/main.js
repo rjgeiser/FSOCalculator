@@ -3196,7 +3196,7 @@ function updateLifetimeReport(retirement, formData) {
           </thead>
           <tbody>${tbodyIneligible.join('')}</tbody>
         </table>
-          <div class="report-notes"><h3>Assumptions</h3><ul><li>${[...notesEligible, ...notesIneligible].join("</li><li>")}</li></ul></div>
+          <div class="form-text"><h3>Assumptions</h3><ul><li>${[...notesEligible, ...notesIneligible].join("</li><li>")}</li></ul></div>
       </div>
     </div>
   `;
