@@ -449,11 +449,11 @@ label {
         padding: 0.75rem;
         font-size: 0.9rem;
     }
-    
+
     .option-card {
         padding: 1.25rem;
     }
-    
+
     .calculation-details {
         padding: 1rem;
     }
@@ -537,16 +537,16 @@ label {
         border-radius: 0;
         min-height: 100vh;
     }
-    
+
     .header h1 {
         font-size: 1.5rem;
         text-align: center;
     }
-    
+
     .header p {
         font-size: 0.9rem;
     }
-    
+
     .form-container {
         border-right: none;
         border-bottom: 1px solid #e2e8f0;
@@ -554,7 +554,7 @@ label {
         padding-bottom: 1rem;
         max-height: none;
     }
-    
+
     .results-container {
         padding-left: 0;
         max-height: none;
@@ -692,6 +692,12 @@ label {
 }
 
 /* Dark mode support for better contrast */
+.dark-mode {
+      select.form-control {
+          background-color: #2d3748 !important;
+          color: #e2e8f0 !important;
+          border-color: #4a5568 !important;
+}
 
     select.form-control option {
         background-color: #2d3748 !important;
@@ -1161,7 +1167,7 @@ input[type="number"]::-webkit-inner-spin-button {
     .retirement-options {
         grid-template-columns: 1fr; /* Single column on mobile */
     }
-    
+
     .option-card {
         margin-bottom: 15px;
     }
@@ -1504,6 +1510,11 @@ footer a:hover {
 }
 
 /* Dark mode styles for larger screens only */
+.dark-mode {
+      body {
+          background-color: #1a202c;
+          color: #e2e8f0;
+}
 
     .form-container, .tabs {
         background-color: #2d3748;
@@ -1632,7 +1643,7 @@ footer a:hover {
         display: block !important;
         width: 100%;
     }
-    
+
     .results-container {
         margin: 0.5rem 0;
     }
