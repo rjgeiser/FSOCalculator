@@ -496,6 +496,7 @@
                         <button class="tab-button" data-tab="severance">Severance</button>
                         <button class="tab-button" data-tab="retirement">Retirement</button>
                         <button class="tab-button" data-tab="health">Health</button>
+                        <button class="tab-button" data-tab="report-tab">Lifetime</button>
                     </div>
                     <div id="severance" class="tab-content">
                         <h3>Severance Pay Calculation</h3>
@@ -508,6 +509,24 @@
                     <div id="health" class="tab-content">
                         <h3>Health Insurance Calculation</h3>
                         <div id="health-results" class="results-container"></div>
+                    </div>
+                    <div class="tab-content" id="report-tab">
+                        <h3>Lifetime Benefits Report (to Age 85)</h3>
+                        <table class="comparison-table" id="lifetime-report-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Annual Annuity</th>
+                                    <th>Years Paid</th>
+                                    <th>Total Value</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        
+                        <p class="form-text">
+                            <strong>Note:</strong> These lifetime totals assume benefits begin when the retirement type becomes available and continue annually until age 85, based on average U.S. life expectancy.
+                        </p>
                     </div>
                 </div>
             </section>
