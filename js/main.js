@@ -1593,6 +1593,17 @@ function calculateSeverance(fsGrade, fsStep, yearsService, age, post, annualLeav
     return result;
 }
 
+//Salary Lookup
+function lookupBaseSalary(grade, step) {
+  try {
+    const stepNum = parseInt(step);
+    if (isNaN(stepNum) || !SALARY_TABLES[grade]) return 0;
+    return SALARY_TABLES[grade].steps[stepNum - 1] || 0;
+  } catch {
+    return 0;
+  }
+}
+
 // Add getMRA function before calculateScenario
 function getMRA(currentAge) {
     // Calculate birth year from current age
@@ -3090,16 +3101,18 @@ function updateLifetimeReport(retirement, formData) {
     }
   };
 
-  for (const [key, data] of Object.entries(retirement)) {
-    const label = labelMap[key] || key;  
-    let annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;
-
     if (annual === 0) {
       const s1 = parseFloat(formData.salaryYear1 || 0);
       const s2 = parseFloat(formData.salaryYear2 || 0);
       const s3 = parseFloat(formData.salaryYear3 || 0);
-      const average = (s1 + s2 + s3) / 3;
-
+      let average = (s1 + s2 + s3) / 3;
+    
+      // If salary years are missing, estimate from grade/step
+      if (average === 0 && typeof lookupBaseSalary === "function") {
+        const base = lookupBaseSalary(formData.fsGrade, formData.fsStep);
+        average = base || 80000; // Use safe fallback if still undefined
+      }
+    
       const multiplierMap = {
         immediate: 0.017,
         tera: 0.017,
@@ -3108,7 +3121,7 @@ function updateLifetimeReport(retirement, formData) {
       };
       const multiplier = multiplierMap[key] || 0.01;
       const years = parseFloat(formData.yearsService || 0);
-
+    
       annual = Math.round(average * years * multiplier);
       console.log(`🔁 Recalculated ${label} annuity for ineligible scenario: $${annual}`);
     }
