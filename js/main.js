@@ -1,4 +1,3 @@
-
 // Global form reference
 let calculatorForm;
 
@@ -481,6 +480,42 @@ function calculateScenario(highThreeAverage, yearsService, currentAge, type, isI
 
     console.log('Final scenario result:', result);
     return result;
+    let eligible = true;
+    let ineligibilityReason = "";
+
+    switch (type) {
+        case 'FULL':
+            if (!(effectiveYearsService >= 20 && currentAge >= 50)) {
+                eligible = false;
+                ineligibilityReason = "Less than 20 years of service or under age 50";
+            }
+            break;
+        case 'VERA':
+            if (!(effectiveYearsService >= 20 && currentAge >= 45)) {
+                eligible = false;
+                ineligibilityReason = "Does not meet VERA age or service requirements";
+            }
+            break;
+        case 'MRA10':
+            if (!(currentAge >= 57 && effectiveYearsService >= 10)) {
+                eligible = false;
+                ineligibilityReason = "Under MRA or fewer than 10 years of service";
+            }
+            break;
+        case 'DEFERRED':
+            if (!(effectiveYearsService >= 5)) {
+                eligible = false;
+                ineligibilityReason = "Less than 5 years of creditable service";
+            }
+            break;
+        case 'TERA':
+            if (!(teraEligible && effectiveYearsService >= teraYearsRequired && currentAge >= teraAgeRequired)) {
+                eligible = false;
+                ineligibilityReason = "Does not meet TERA eligibility criteria";
+            }
+            break;
+    }
+    
 }
 
 // Core utility functions
@@ -2983,33 +3018,49 @@ document.addEventListener('DOMContentLoaded', function() {
 //});
 
 function updateLifetimeReport(retirement, formData) {
-  const tbody = document.querySelector('#lifetime-report-table tbody');
-  if (!tbody || !retirement) return;
+  const reportContainer = document.getElementById('report-tab');
+  if (!reportContainer || !retirement) return;
 
-  const retirementAge = parseInt(formData.age, 10) || 57;
   const maxAge = 85;
-  const rows = [];
+  const currentAge = parseInt(formData.age, 10) || 57;
+  const tbodyEligible = [];
+  const tbodyIneligible = [];
 
   for (const [key, data] of Object.entries(retirement)) {
-    const label = `${data.label || key} <br><small>(Starts at age ${data.startingAge || retirementAge})</small>`;
+    const label = data.label || key;
     const annual = data.annualAnnuity || 0;
-    const startAge = parseInt(data.startingAge, 10) || retirementAge;
+    const startAge = parseInt(data.startingAge, 10) || currentAge;
     const years = Math.max(0, maxAge - startAge);
     const total = Math.round(annual * years);
 
-    rows.push(`
+    const formattedRow = `
       <tr>
-        <td>${label}</td>
+        <td>${label} <br><small>(Starts at age ${startAge})</small></td>
         <td>$${annual.toLocaleString()}</td>
         <td>${years}</td>
         <td>$${total.toLocaleString()}</td>
       </tr>
-    `);
+    `;
+
+    if (data.eligible) {
+      tbodyEligible.push(formattedRow);
+    } else {
+      const reason = data.ineligibilityReason || "Not eligible due to age or years of service";
+      const rowWithReason = `
+        <tr>
+          <td>${label} <br><small>${reason}</small></td>
+          <td>$${annual.toLocaleString()}</td>
+          <td>${years}</td>
+          <td>$${total.toLocaleString()}</td>
+        </tr>
+      `;
+      tbodyIneligible.push(rowWithReason);
+    }
   }
 
   if (window.calculatorResults?.severance?.grossSeverance) {
     const severance = window.calculatorResults.severance.grossSeverance;
-    rows.unshift(`
+    tbodyEligible.unshift(`
       <tr>
         <td>Severance <br><small>(One-time payment)</small></td>
         <td>$${severance.toLocaleString()}</td>
@@ -3019,5 +3070,41 @@ function updateLifetimeReport(retirement, formData) {
     `);
   }
 
-  tbody.innerHTML = rows.join('');
+  reportContainer.innerHTML = `
+    <h3>Lifetime Benefits Report (to Age 85)</h3>
+
+    <h4>Eligible Retirement Options</h4>
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Annual Annuity</th>
+          <th>Years Paid</th>
+          <th>Total Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tbodyEligible.join('')}
+      </tbody>
+    </table>
+
+    <h4>Ineligible Options (for Comparison Only)</h4>
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Annual Annuity</th>
+          <th>Years Assumed</th>
+          <th>Total Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tbodyIneligible.join('')}
+      </tbody>
+    </table>
+
+    <p class="form-text">
+      <strong>Note:</strong> Eligible options reflect actual retirement benefits based on user qualifications. Ineligible options are shown for comparison purposes only and assume payout to age 85.
+    </p>
+  `;
 }
