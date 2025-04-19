@@ -3027,8 +3027,10 @@ function updateLifetimeReport(retirement, formData) {
   const tbodyIneligible = [];
 
   for (const [key, data] of Object.entries(retirement)) {
+    if (!data || typeof data !== "object") continue;
+
     const label = data.label || key;
-    const annual = data.annualAnnuity || 0;
+    const annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;
     const startAge = parseInt(data.startingAge, 10) || currentAge;
     const years = Math.max(0, maxAge - startAge);
     const total = Math.round(annual * years);
@@ -3058,7 +3060,10 @@ function updateLifetimeReport(retirement, formData) {
     }
   }
 
-  if (window.calculatorResults?.severance?.grossSeverance) {
+  if (
+    window.calculatorResults?.severance?.grossSeverance &&
+    typeof window.calculatorResults.severance.grossSeverance === "number"
+  ) {
     const severance = window.calculatorResults.severance.grossSeverance;
     tbodyEligible.unshift(`
       <tr>
