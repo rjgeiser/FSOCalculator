@@ -3091,16 +3091,18 @@ function updateLifetimeReport(retirement, formData) {
   };
 
   for (const [key, data] of Object.entries(retirement)) {
-    const label = labelMap[key] || key;
-    let annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;
-    
-    if (annual === 0) {
-      const high3 = parseFloat(formData.salaryYear1 || 0) + parseFloat(formData.salaryYear2 || 0) + parseFloat(formData.salaryYear3 || 0);
-      const average = high3 / 3;
-      const multiplier = (key === "immediate") ? 0.017 : 0.01;
-      const serviceYears = parseFloat(formData.yearsService || 0);
-      annual = Math.round(average * serviceYears * multiplier);
-    }
+    const label = labelMap[key] || key;  
+    let annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;  
+        if (annual === 0) {
+          const s1 = parseFloat(formData.salaryYear1 || 0);
+          const s2 = parseFloat(formData.salaryYear2 || 0);
+          const s3 = parseFloat(formData.salaryYear3 || 0);
+          const average = (s1 + s2 + s3) / 3;
+        
+          const multiplier = (key === "immediate") ? 0.017 : 0.01;
+          const years = parseFloat(formData.yearsService || 0);
+          annual = Math.round(average * years * multiplier);
+        }
     const startAge = parseInt(data.startingAge, 10) || currentAge;
     const years = Math.max(0, maxAge - startAge);
     const total = Math.round(annual * years);
