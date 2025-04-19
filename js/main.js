@@ -287,8 +287,19 @@ function calculateScenario(highThreeAverage, yearsService, currentAge, type, isI
     let mraReduction = 0;
     let age62Comparison = null;
 
+    //Calculate MRA age with a years and months value and a maximum of 57
+    function formatMRA(decimalAge) {
+      const capped = Math.min(decimalAge, 57); // FSPS max
+      const years = Math.floor(capped);
+      const months = Math.round((capped - years) * 12);
+      return `${years} years${months > 0 ? `, ${months} months` : ""}`;
+    }  
+    
     // Get MRA for the employee's age
-    const mraAge = getMRA(currentAge);
+    const mraAgeRaw = getMRA(currentAge);
+    const mraAge = Math.min(mraAgeRaw, 57); // cap per FSPS
+    const mraDisplay = formatMRA(mraAgeRaw); // use raw for display, but capped for logic
+
 
     // Get current grade
     const fsGrade = document.getElementById('fs-grade').value;
@@ -322,7 +333,7 @@ function calculateScenario(highThreeAverage, yearsService, currentAge, type, isI
             
             if (currentAge < mraAge) {
                 // Not yet eligible to collect, show future scenarios
-                description = `MRA+10 retirement (eligible to begin at age ${mraAge})`;
+                description = `MRA+10 retirement (eligible to begin at age ${mraDisplay})`;
                 // Calculate reduction if starting at MRA
                 const yearsUnder62FromMRA = 62 - mraAge;
                 mraReduction = 0.05 * yearsUnder62FromMRA;
@@ -2547,7 +2558,7 @@ class Calculator {
                         </tr>
                         <tr>
                             <th>Minimum Retirement Age (MRA)</th>
-                            <td>${retirement.scenarios.mraPlusTen.mraAge} years</td>
+                            <td>${mraDisplay}</td>
                         </tr>
                     </table>
                 </div>
@@ -3031,118 +3042,133 @@ document.addEventListener('DOMContentLoaded', function() {
 //});
 
 function updateLifetimeReport(retirement, formData) {
-  const reportContainer = document.getElementById('lifetime-results');
-  if (!reportContainer || !retirement) {
-    console.warn("⚠️ Report container or retirement data missing");
-    return;
-  }
-
-  console.log("🧾 Running updateLifetimeReport");
-  console.log("📋 formData:", formData);
-  console.log("📦 retirement data:", retirement);
+  const reportContainer = document.getElementById('report-tab');
+  if (!reportContainer || !retirement) return;
 
   const maxAge = 85;
   const currentAge = parseInt(formData.age, 10) || 57;
+  const service = parseInt(formData.yearsService, 10) || 0;
+  const grade = formData.fsGrade || '';
+  const teraMinAge = parseInt(formData.teraAge || 50, 10);
+  const teraMinYears = parseInt(formData.teraYears || 20, 10);
+
   const tbodyEligible = [];
   const tbodyIneligible = [];
+  const notesEligible = [];
+  const notesIneligible = [];
+
+  const labelMap = {
+    full: "Immediate",
+    tera: "V/TERA",
+    mra10: "MRA+10",
+    deferred: "Deferred"
+  };
+    
+    console.log("🧾 Running updateLifetimeReport");
+    console.log("📋 formData:", formData);
+    console.log("📦 retirement data:", retirement);
+    
+  const eligibilityRules = {
+    full: (age, service, grade) => {
+      let reasons = [];
+      if (age < 50) reasons.push("must be at least 50 years old");
+      if (service < 20) reasons.push("requires 20+ years of service");
+      if (!/^FS-0[1-3]$/.test(grade)) reasons.push("requires grade FS-01 or higher");
+      return reasons;
+    },
+    tera: (age, service) => {
+      let reasons = [];
+      if (age < teraMinAge) reasons.push(`must be at least ${teraMinAge}`);
+      if (service < teraMinYears) reasons.push(`requires ${teraMinYears}+ years of service`);
+      return reasons;
+    },
+    mra10: (age, service) => {
+      let reasons = [];
+      if (age < 57) reasons.push("must reach MRA (57)");
+      if (service < 10) reasons.push("requires 10+ years of service");
+      return reasons;
+    },
+    deferred: (age, service) => {
+      return service < 5 ? ["requires at least 5 years of creditable service"] : [];
+    }
+  };
 
   for (const [key, data] of Object.entries(retirement)) {
     if (!data || typeof data !== "object") continue;
 
-    const label = data.label || key;
+    const label = labelMap[key] || data.label || key;
     const annual = typeof data.annualAnnuity === "number" ? data.annualAnnuity : 0;
     const startAge = parseInt(data.startingAge, 10) || currentAge;
     const years = Math.max(0, maxAge - startAge);
     const total = Math.round(annual * years);
 
+    const assumptions = `$${annual.toLocaleString()}/yr × ${years} years starting at age ${startAge}`;
+
     console.log(`🔹 ${label}: $${annual} x ${years} years = $${total} (${data.eligible ? "Eligible" : "Ineligible"})`);
 
-    const formattedRow = `
+    const rowHTML = `
       <tr>
-        <td>${label} <br><small>(Starts at age ${startAge})</small></td>
-        <td>$${annual.toLocaleString()}</td>
-        <td>${years}</td>
+        <td>${label}</td>
         <td>$${total.toLocaleString()}</td>
       </tr>
     `;
 
-    if (data.eligible) {
-      tbodyEligible.push(formattedRow);
+    const reasonList = eligibilityRules[key] ? eligibilityRules[key](currentAge, service, grade) : [];
+
+    if (reasonList.length === 0) {
+      tbodyEligible.push(rowHTML);
+      notesEligible.push(`<strong>${label}:</strong> ${assumptions}`);
     } else {
-      const reason = data.ineligibilityReason || "Not eligible due to age or years of service";
-      const rowWithReason = `
-        <tr>
-          <td>${label} <br><small>${reason}</small></td>
-          <td>$${annual.toLocaleString()}</td>
-          <td>${years}</td>
-          <td>$${total.toLocaleString()}</td>
-        </tr>
-      `;
-      tbodyIneligible.push(rowWithReason);
+      tbodyIneligible.push(rowHTML);
+      notesIneligible.push(`<strong>${label}:</strong> Ineligible because ${reasonList.join(", ")} (${assumptions})`);
     }
   }
 
+  // Add Severance, if applicable
   if (
     window.calculatorResults?.severance?.grossSeverance &&
     typeof window.calculatorResults.severance.grossSeverance === "number"
   ) {
     const severance = window.calculatorResults.severance.grossSeverance;
-    console.log(`💰 Severance included: $${severance}`);
     tbodyEligible.unshift(`
       <tr>
-        <td>Severance <br><small>(One-time payment)</small></td>
-        <td>$${severance.toLocaleString()}</td>
-        <td>1</td>
+        <td>Severance</td>
         <td>$${severance.toLocaleString()}</td>
       </tr>
     `);
-  } else {
-    console.log("ℹ️ No severance value detected.");
+    notesEligible.unshift(`<strong>Severance:</strong> One-time payment of $${severance.toLocaleString()}`);
   }
 
-reportContainer.innerHTML = `
-  <div class="form-section">
-    <h3>Lifetime Benefits Report (to Age 85)</h3>
-    
-    <div class="option-card">
-      <h4>Eligible Retirement Options</h4>
-      <div class="comparison-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th>Annual Annuity</th>
-              <th>Years Paid</th>
-              <th>Total Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tbodyEligible.join('')}
-          </tbody>
-        </table>
+  reportContainer.innerHTML = `
+    <div class="form-section">
+      <h3>Lifetime Benefits Report (to Age 85)</h3>
+
+      <div class="option-card">
+        <h4>Eligible Retirement Options</h4>
+        <div class="comparison-table">
+          <table>
+            <thead><tr><th>Type</th><th>Total Value</th></tr></thead>
+            <tbody>${tbodyEligible.join('')}</tbody>
+          </table>
+        </div>
+        <div class="form-text">
+          <strong>Assumptions:</strong><br>${notesEligible.join('<br>')}
+        </div>
       </div>
 
-      <h4>Ineligible Options (for Comparison Only)</h4>
-      <div class="comparison-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th>Annual Annuity</th>
-              <th>Years Assumed</th>
-              <th>Total Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tbodyIneligible.join('')}
-          </tbody>
-        </table>
+      <div class="option-card">
+        <h4>Ineligible Options (for Comparison Only)</h4>
+        <div class="comparison-table">
+          <table>
+            <thead><tr><th>Type</th><th>Total Value</th></tr></thead>
+            <tbody>${tbodyIneligible.join('')}</tbody>
+          </table>
+        </div>
+        <div class="form-text">
+          <strong>Reasons for Ineligibility and Assumptions:</strong><br>${notesIneligible.join('<br>')}
+        </div>
       </div>
-
-      <p class="form-text">
-        <strong>Note:</strong> Eligible options reflect actual retirement benefits based on user qualifications. Ineligible options are shown for comparison purposes only and assume payout to age 85.
-      </p>
     </div>
-  </div>
   `;
 }
+
