@@ -889,7 +889,7 @@ const UIManager = {
             resultsColumn.style.opacity = '1'; // Ensure opacity
 
             // Make sure all results containers are visible
-            ['severance-results', 'retirement-results', 'health-results'. 'lifetime-results'].forEach(id => {
+            ['severance-results', 'retirement-results', 'health-results', 'lifetime-results'].forEach(id => {
                 const container = document.getElementById(id);
                 if (container) {
                     container.style.display = 'block';
