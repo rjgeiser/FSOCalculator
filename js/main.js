@@ -2952,6 +2952,14 @@ function updateStepDropdown(grade) {
     fsStep.style.display = '';
 }
 
+// Add dark mode toggle
+document.getElementById('themeToggle')?.addEventListener('click', () => {
+  const body = document.body;
+  const button = document.getElementById('themeToggle');
+  body.classList.toggle('dark-mode');
+  button.textContent = body.classList.contains('dark-mode') ? '☀️ Light Mode' : '🌙 Dark Mode';
+});
+
 // Add event listeners after DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Set up grade change listener
@@ -2967,5 +2975,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
-
-// Function to update step dropdown visibility based on grade
