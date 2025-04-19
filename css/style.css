@@ -148,3 +148,156 @@ input.form-control {
   border-color: #4a5568;           /* Dark border */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+/* --- DARK MODE OVERRIDES BELOW --- */
+/* ----------------------------------------- *//* Production-Ready Dark Mode + Toggle CSS *//* ----------------------------------------- *//* Theme Toggle Button */.theme-toggle {  position: fixed;  bottom: 1rem;  right: 1rem;  z-index: 1000;  padding: 0.5rem 1rem;  border-radius: 20px;  background-color: #2b6cb0;  color: white;  font-weight: bold;  cursor: pointer;  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);  border: none;  transition: background-color 0.3s;}.theme-toggle:hover {  background-color: #3182ce;}/* Dark Mode Overrides for Form Sections */
+.dark-mode .form-section {
+  background-color: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+.dark-mode .form-section h3 {
+  color: #e2e8f0;
+  border-bottom-color: #4a5568;
+}
+/* Dark Mode Overrides for Tabs */
+.dark-mode .tabs {
+  background-color: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+.dark-mode .tab-buttons {
+  background-color: #2d3748;
+  border-color: #4a5568;
+}
+
+.dark-mode .tab-button {
+  color: #e2e8f0;
+}
+.dark-mode .tab-button.active {
+  background-color: #2b6cb0;
+  color: #ffffff;
+}
+
+.dark-mode .tab-content {
+  background-color: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+.dark-mode .tab-content h4 {
+  color: #e2e8f0;
+  border-bottom-color: #4a5568;
+}
+
+.dark-mode .nav-tabs {
+  border-color: #4a5568;
+}
+.dark-mode .nav-tabs button {
+  color: #e2e8f0;
+}
+.dark-mode .nav-tabs button.active {
+  color: #4299e1;
+}
+.dark-mode .nav-tabs button.active::after {
+  background-color: #4299e1;
+}
+/* Dark Mode Overrides for Option Cards and Details */
+.dark-mode .option-card {
+  background-color: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+.dark-mode .option-card h6 {
+  color: #e2e8f0;
+  border-bottom-color: #4a5568;
+}
+
+.dark-mode .option-details h6 {
+  color: #e2e8f0;
+}
+
+.dark-mode .option-details li {
+  color: #e2e8f0;
+}
+.dark-mode .option-details li:before {
+  color: #90cdf4;
+}
+/* Dark Mode Overrides for Comparison Tables and Progress Indicators */
+.dark-mode .comparison-table {
+  background-color: #2d3748;
+  color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.dark-mode .comparison-table td {
+  background-color: #2d3748;
+  color: #e2e8f0;
+  border-bottom-color: #4a5568;
+}
+.dark-mode .comparison-table th {
+  background-color: #2b6cb0;
+  color: #ffffff;
+}
+.dark-mode .comparison-table tr:hover td {
+  background-color: #4a5568;
+}
+
+.dark-mode .progress-step-label {
+  color: #e2e8f0;
+}
+/* Dark Mode Overrides for Informational Text and Annotations */
+.dark-mode .tooltip .tooltip-text {
+  background-color: #4a5568;
+  color: #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.dark-mode .disclaimer {
+  background-color: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+.dark-mode .disclaimer strong {
+  color: #90cdf4;
+}
+
+.dark-mode .citation {
+  color: #a0aec0;
+  border-top-color: #4a5568;
+}
+
+.dark-mode .retirement-notes {
+  background-color: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+.dark-mode .retirement-notes h5 {
+  color: #e2e8f0;
+}
+.dark-mode .retirement-notes li:before {
+  color: #90cdf4;
+}
+
+.dark-mode .retirement-summary .alert-info {
+  background-color: #2a4365;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+/* Dark Mode: Final Element Touchups */
+.dark-mode label {
+  color: #e2e8f0;
+}
+.dark-mode textarea,
+.dark-mode input {
+  background-color: #2d3748;
+  color: #e2e8f0;
+  border-color: #4a5568;
+}
+.dark-mode footer a {
+  color: #90cdf4;
+}
+.dark-mode footer a:hover {
+  color: #63b3ed;
+}
