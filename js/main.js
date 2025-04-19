@@ -480,7 +480,7 @@ function calculateScenario(highThreeAverage, yearsService, currentAge, type, isI
         description,
         supplementalAnnuity: supplementalAnnuity || 0,
         monthlySupplemental: monthlySupplemental || 0,
-        formatMRA(getMRA(formData.age)),
+        mraDisplay,
         mraReduction,
         totalServiceYears: effectiveYearsService,
         sickLeaveServiceDuration: sickLeaveServiceDuration || null,
@@ -2558,7 +2558,7 @@ class Calculator {
                         </tr>
                         <tr>
                             <th>Minimum Retirement Age (MRA)</th>
-                            <td>${formatMRA(getMRA(formData.age))}</td>
+                            <td>${retirement.mraDisplay}</td>
                         </tr>
                     </table>
                 </div>
