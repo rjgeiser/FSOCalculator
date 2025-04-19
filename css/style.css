@@ -692,12 +692,6 @@ label {
 }
 
 /* Dark mode support for better contrast */
-@media (prefers-color-scheme: dark) {
-    select.form-control {
-        background-color: #2d3748 !important;
-        color: #e2e8f0 !important;
-        border-color: #4a5568 !important;
-    }
 
     select.form-control option {
         background-color: #2d3748 !important;
@@ -1510,11 +1504,6 @@ footer a:hover {
 }
 
 /* Dark mode styles for larger screens only */
-@media (prefers-color-scheme: dark) and (min-width: 769px) {
-    body {
-        background-color: #1a202c;
-        color: #e2e8f0;
-    }
 
     .form-container, .tabs {
         background-color: #2d3748;
