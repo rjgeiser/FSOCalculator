@@ -1532,7 +1532,7 @@ function calculateSeverance(fsGrade, fsStep, yearsService, age, post, annualLeav
     }
 
     const stepIndex = parseInt(fsStep) - 1;
-    const baseSalary = SALARY_TABLES[fsGrade].steps[stepIndex]*.3394; //Adjusted with DC locality
+    const baseSalary = SALARY_TABLES[fsGrade].steps[stepIndex]*1.3394; //Adjusted with DC locality
     
     if (typeof baseSalary !== 'number' || isNaN(baseSalary)) {
         throw new CalculationError(`Invalid salary for grade ${fsGrade} step ${fsStep}`);
