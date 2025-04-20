@@ -1537,7 +1537,6 @@ function calculateSeverance(fsGrade, fsStep, yearsService, age, post, annualLeav
         throw new CalculationError(`Invalid grade: ${fsGrade}`);
     }
 
-    const stepIndex = parseInt(fsStep) - 1;
     const localityMultiplier = 1.3394; // DC locality adjustment
     const baseSalary = SALARY_TABLES[fsGrade].steps[stepIndex] * localityMultiplier);
     
