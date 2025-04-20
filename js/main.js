@@ -1532,7 +1532,7 @@ function calculateSeverance(fsGrade, fsStep, yearsService, age, post, annualLeav
     }
 
     const stepIndex = parseInt(fsStep) - 1;
-    const baseSalary = SALARY_TABLES[fsGrade].steps[stepIndex];
+    const baseSalary = SALARY_TABLES[fsGrade].steps[stepIndex]*.3394; //Adjusted with DC locality
     
     if (typeof baseSalary !== 'number' || isNaN(baseSalary)) {
         throw new CalculationError(`Invalid salary for grade ${fsGrade} step ${fsStep}`);
@@ -2406,7 +2406,7 @@ class Calculator {
                         </table>
                     </div>
                     <div class="form-text">
-                        <p><strong>Note:</strong> Severance pay policy is unclear if calculations use base salary or salary adjusted with locality pay. This estimate uses base salary to avoid possible overestimation.</p>
+                        <p><strong>Note:</strong> Severance pay is adjusted with DC locality pay at 33.94%.</p>
                         <p><strong>Important:</strong> Severance pay is not available to employees who are eligible for immediate retirement (including TERA) or to FS-01 and Senior Foreign Service members who are involuntarily separated.</p>
                     </div>
                     <div style="margin-top: 1rem;">
