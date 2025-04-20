@@ -1435,6 +1435,11 @@ window.HEALTH_INSURANCE_RATES = {
         'self-plus-one': { monthly: 488.74, cobra: 1954.96 * 1.02 },
         'family': { monthly: 549.35, cobra: 2197.39 * 1.02 }
     }
+    'NALC-High': {
+        'self': { monthly: 238.29, cobra: 858.15 * 1.02 },
+        'self-plus-one': { monthly: 576.50, cobra: 1916.37 * 1.02 },
+        'family': { monthly: 516.58, cobra: 1974.64 * 1.02 }
+    }
 };
 
 // Add state-specific ACA adjustment factors
