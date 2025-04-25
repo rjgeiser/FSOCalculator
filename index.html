@@ -1,11 +1,12 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="color-scheme" content="light dark">
     <meta name="description" content="Foreign Service Officer Separation Benefits Calculator - Calculate severance pay, FSPS annuity, and health insurance options">
     <meta name="author" content="Roy Geiser">
     <meta name="developer" content="Roy Geiser - Foreign Service Benefits Calculator">
@@ -27,11 +28,32 @@
             <div class="disclaimer">
                 <p><strong>Disclaimer:</strong> This calculator provides estimates based on publicly available information and should be used for planning purposes only. The actual benefits may vary based on individual circumstances, policy changes, and other factors. Please consult with HR or a benefits counselor for official calculations and guidance. Salary figures and allowance rates are updated periodically but may not reflect the most recent changes.</p>
             </div>
+            <!-- Sticky Toggle Row -->
+              <div class="theme-toggle-inline">
+                <label class="theme-switch">
+                  <input type="checkbox" id="theme-toggle-checkbox" />
+                  <span class="slider">
+                    <span class="icon light">
+                      <!-- Embedded SVG: Sun 2 -->
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="#f6e05e">
+                        <path d="M12 18a6 6 0 100-12 6 6 0 000 12zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                      </svg>
+                    </span>
+                    <span class="icon dark">
+                      <!-- Moon SVG -->
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                        <path fill="#4a5568" d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/>
+                      </svg>
+                    </span>
+                  </span>
+                </label>
+              </div>
         </header>
-        <main class="content-wrapper">
+        <main class="content-wrapper">   
             <!-- Left Column - Form -->
             <section class="form-column">
                 <form id="calculator-form">
+                    <!-- Form continues here -->
                     <div class="form-container">
                         <!-- Personal Information Section -->
                         <div class="form-section" data-step="personal">
@@ -140,7 +162,7 @@
                                 
                                 <div class="form-group col-md-6 tooltip">
                                     <label for="years-service">Years of Service</label>
-                                    <select id="years-service" class="form-control" required onchange="validateServiceDuration()">
+                                    <select id="years-service" class="form-control" required onchange="getValidatedServiceDuration()">
                                         <option value="">Select Years</option>
                                         <!-- Options populated by JavaScript -->
                                     </select>
@@ -162,7 +184,7 @@
                             <!-- Remove the entire form-group div containing the dropdown -->
 
                                 <div class="form-group col-md-4 tooltip">
-                                    <label for="tera-eligible">V/TERA Offered</label>
+                                    <label for="tera-eligible">VERA & TERA Offered</label>
                                     <select id="tera-eligible" name="tera-eligible" class="form-control">
                                         <option value="no">No</option>
                                         <option value="yes">Yes</option>
@@ -173,7 +195,7 @@
                             <div id="tera-fields" style="display: none;">
                                 <div class="form-row">
                                     <div class="form-group col-md-6">
-                                        <label for="tera-years">V/TERA Years of Service</label>
+                                        <label for="tera-years">VERA & TERA Years of Service</label>
                                         <select id="tera-years" name="tera-years" class="form-control" required>
                                             <option value="10">10 years</option>
                                             <option value="11">11 years</option>
@@ -190,7 +212,7 @@
                                     </div>
 
                                     <div class="form-group col-md-6">
-                                        <label for="tera-age">V/TERA Age Required</label>
+                                        <label for="tera-age">Age Required (VERA only)</label>
                                         <select id="tera-age" name="tera-age" class="form-control" required>
                                             <option value="40">40 years</option>
                                             <option value="41">41 years</option>
@@ -264,20 +286,21 @@
                                     initializeTeraToggle();
                                 }
                             </script>
-
+                        </div>
                         <!-- Health Insurance Section -->
                         <div class="form-section" data-step="health">
-                            <h3>Health Insurance Information</h3>
+                            <h3>Health Insurance Information (Optional)</h3>
                             <!-- Health Insurance Plan (full width) -->
                             <div class="form-row">
                                 <div class="form-group col-12">
                                     <label for="current-plan">Health Insurance Plan</label>
-                                    <select id="current-plan" class="form-control" required>
+                                    <select id="current-plan" class="form-control">
                                         <option value="">Select Plan</option>
                                         <option value="BCBS-basic">BCBS Basic</option>
                                         <option value="FSBP-standard">Foreign Service Benefit Plan</option>
                                         <option value="AETNA-direct">Aetna Direct</option>
                                         <option value="GEHA-standard">GEHA Standard</option>
+                                        <option value="GEHA-standard">GEHA HDHP</option>
                                         <option value="Compass Rose">Compass Rose</option>
                                         <option value="NALC-High">NALC High</option>
                                     </select>
@@ -288,7 +311,8 @@
                             <div class="form-row">
                                 <div class="form-group col-md-6">
                                     <label for="coverage-type">Enrollment Type</label>
-                                    <select id="coverage-type" class="form-control" required >
+                                    <select id="coverage-type" class="form-control">
+                                        <option value="">Select Type</option>
                                         <option value="self">Self Only</option>
                                         <option value="self-plus-one">Self Plus One</option>
                                         <option value="family">Self and Family</option>
@@ -297,7 +321,7 @@
                                 
                                 <div class="form-group col-md-6">
                                     <label for="state">Home State of Record</label>
-                                    <select id="state" class="form-control" required>
+                                    <select id="state" class="form-control">
                                         <option value="">Select a State</option>
                                         <option value="AL">Alabama</option>
                                         <option value="AK">Alaska</option>
@@ -354,14 +378,13 @@
                                 </div>
                             </div>
                         </div>
-
                         <!-- Advanced Data Entry Section (Optional) -->
                         <div class="form-section">
                             <h3>Advanced Data Entry (Optional)</h3>
                             <div class="form-group">
                                 <label for="service-computation-date">Service Computation Date (Optional)</label>
                                 <input type="date" id="service-computation-date" class="form-control" 
-                                    onchange="validateServiceDuration()"
+                                    onchange="getValidatedServiceDuration()"
                                     title="Enter your Service Computation Date for more accurate calculations">
                                 <small class="form-text text-muted">If provided, this will be used instead of Years of Service</small>
                             </div>
@@ -474,24 +497,21 @@
                                     </select>
                             </div>
                         </div>
-                    </div>
-
+                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Calculate Benefits</button>
                         <button type="reset" class="btn btn-secondary">Reset Form</button>
                     </div>
+                  </div>
                 </form>
             </section>
-
             <!-- Right Column - Results -->
-            <section class="results-column">
+            <section class="results-column">           
                 <div id="loading" class="loading-container" style="display: none;">
                     <div class="loading-spinner"></div>
                     <p>Calculating your benefits...</p>
                 </div>
-
                 <div id="error" class="error-message" style="display: none;"></div>
-
                 <div class="tabs">
                     <div class="tab-buttons">
                         <button class="tab-button" data-tab="severance">Severance</button>
@@ -509,16 +529,20 @@
                     </div>
                     <div id="health" class="tab-content">
                         <h3>Health Insurance Calculation</h3>
-                        <div id="health-results" class="results-container"></div>
+                        <div id="health-results" class="results-container">
+  <p id="health-skipped-message" style="display: none; color: #555;">
+    You skipped the Health Insurance section. No cost estimates are available. Complete this section to compare FEHB, COBRA, and ACA options.
+  </p>
+</div>
+                        </div>
+                        <div id="lifetime" class="tab-content">
+                            <h3>Lifetime Benefits Report (to Age 85)</h3>
+                            <div id="lifetime-results" class="results-container">
+                            </div>
+                        </div>
                     </div>
-                    <div id="lifetime" class="tab-content">
-                        <h3>Lifetime Benefits Report (to Age 85)</h3>
-                        <div id="lifetime-results" class="results-container">
-                    </div>
-                </div>
             </section>
         </main>
-    </div>
     <footer>
         <p>Developed by Roy Geiser | Foreign Service Benefits Calculator</p>
         <p>This calculator is provided for informational purposes only. Please consult with HR for official calculations.</p>
@@ -530,8 +554,26 @@
     
     <div class="skip-link" tabindex="0">Skip to main content</div>
 
-    <!-- Dark Mode Toggle Button -->
-    <!-- <button id="themeToggle" class="theme-toggle">🌙 Dark Mode</button> -->
-
+<!-- Theme toggle script -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const themeToggle = document.getElementById("theme-toggle-checkbox");
+    
+      // Load saved theme from localStorage on page load
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme) {
+        document.documentElement.setAttribute("data-theme", savedTheme);
+        themeToggle.checked = savedTheme === "dark";
+      }
+    
+      // Listen for user toggle
+      themeToggle.addEventListener("change", () => {
+        const isDark = themeToggle.checked;
+        const theme = isDark ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+        localStorage.setItem("theme", theme);
+      });
+    });
+</script>
 </body>
 </html> 
