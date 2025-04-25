@@ -1582,8 +1582,9 @@ footer a:hover {
 }
 
 .results-column {
-    min-width: 0;
-    display: none; /* Hide by default */
+  overflow-y: auto;
+  height: 100%;
+  flex: 1; /* optional equal width */
 }
 
 .results-column.visible {
@@ -1612,7 +1613,9 @@ footer a:hover {
 @media (max-width: 768px) {
     .results-column.visible {
         display: block !important;
-        width: 100%;
+          overflow-y: auto;
+          height: 100%;
+          flex: 1; /* optional equal width */
     }
     
     .results-container {
