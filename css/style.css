@@ -530,9 +530,12 @@ label {
 /* Light-Dark Toggle */
 .theme-toggle-inline {
   display: flex;
-  justify-content: flex-end;
-  padding: 0.5rem 1rem 0;
-  background: transparent; /* Matches header */
+  justify-content: flex-end;    /* ⬅️ Aligns toggle to the right edge */
+  padding: 0 1rem;
+  margin-top: -0.5rem;          /* Pulls closer to header */
+  margin-bottom: 0.5rem;
+  background: transparent;
+  z-index: 10;
 }
 
 .theme-switch {
@@ -1413,22 +1416,15 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .content-wrapper {
-    display: flex;
-    flex-direction: row;
-    height: auto;
-    min-height: 100vh;
-    gap: 2rem;
-    padding: 1rem;
-    overflow: visible;
+  display: flex;
+  height: 100vh; /* or max-height */
 }
 
-.form-column {
-  height: 100vh;
+.form-column,
+.results-column {
   overflow-y: auto;
-  padding: 1rem;
-  position: relative;
-  display: flex;
-  flex-direction: column;
+  height: 100%;
+  flex: 1; /* optional equal width */
 }
 
 .form-container {
