@@ -1,3 +1,75 @@
+# 🇺🇸 FSO Separation Benefits Calculator
+
+A lightweight, privacy-friendly web calculator to help U.S. Foreign Service Officers estimate potential separation benefits, including Severance Pay, Retirement Annuity options, Lifetime Benefits, and Health Continuation Costs.
+
+---
+
+## 🚀 Version 2.1.0 (April 2025)
+
+### New Features
+- 🌗 Full Light and Dark Mode toggle support
+- 📦 Auto-save and reload form data via `sessionStorage`
+- 🖨️ Printable Lifetime Report (results-only, clean printout)
+- 🧹 Manual "Clear Saved Form Data" button with matching SVG styling
+- 🔥 Toast notifications for form reset and clear data actions
+- 🧩 Accessibility improvements (aria-labels, scoped headers for screen readers)
+
+---
+
+### Enhancements
+- Responsive mobile, tablet, and desktop layout improvements
+- Smooth transition animations for toggle and print button fade-out
+- Full Dark Mode compatibility for alerts, tooltips, tables, and form fields
+- Footer updated with version number (`2.1`) and GitHub repository link
+- Minor UI polishes for better consistency across browsers
+
+---
+
+### Bug Fixes
+- Resolved occasional print layout issues (blank pages removed)
+- Cleaned up form validation and friendly in-form error messages
+- Ensured error handling distinguishes validation vs unexpected failures
+- Improved dark mode color contrast across all form elements
+
+---
+
+## 📋 Features
+
+- **Severance Pay Estimates** — based on grade, years of service, and eligibility rules.
+- **Retirement Scenarios** — Immediate, MRA+10, Deferred, VERA, and TERA retirement options calculated separately.
+- **Lifetime Benefit Projection** — Total estimated annuity payouts from retirement to age 85.
+- **Health Continuation Costs** — Federal Employee Health Benefits (FEHB) continuation cost estimator post-separation.
+- **Ineligible Option Comparison** — See potential values even if currently ineligible.
+- **Accessibility Support** — Keyboard navigation and screen reader-friendly labels.
+
+---
+
+## 🖥️ Technology Stack
+
+- HTML5, CSS3, and Vanilla JavaScript (no frameworks)
+- Responsive mobile-first design
+- PWA-ready structure (future offline support planned)
+- Privacy-first: No form data transmitted, no analytics
+
+---
+
+## 📄 License
+
+Licensed under the [MIT License](https://opensource.org/licenses/MIT).
+
+---
+
+## 📦 Repository
+
+[🔗 View Source on GitHub](https://github.com/rjgeiser/FSOCalculator)
+
+---
+
+## 🙏 Acknowledgements
+
+Built with dedication for the Foreign Service community.  
+Designed and maintained by **Roy Geiser**.
+
 # 🇺🇸 FSO Separation Benefits Calculator – Version 2
 
 This Progressive Web App helps Foreign Service Officers estimate their separation benefits, including retirement options, severance, FEHB continuation, and projected lifetime annuities. Built with privacy, portability, and precision in mind, this tool can be run entirely offline.
