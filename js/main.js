@@ -2588,7 +2588,8 @@ static setupFormHandlers() {
                 <div class="form-section">
                     <h3>Severance Pay Summary</h3>
                     <div class="alert alert-info" style="margin: 1rem 0; padding: 1rem; background-color: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;">
-                        <p><strong>Note:</strong> Severance pay is not available for FS-01 and Senior Foreign Service members who are involuntarily separated, as they are eligible for immediate retirement.</p>
+                      <p><strong>Note:</strong> Severance pay is generally only available for employees who are involuntarily separated (e.g., Reduction in Force, directed separation). Voluntary resignations, retirements, or separations for cause typically do not qualify for severance payments.</p>
+                      <p>Additionally, severance pay is not available for FS-01 and Senior Foreign Service members who are involuntarily separated, as they are eligible for immediate retirement.</p>
                     </div>
                     <div style="margin-top: 1rem;">
                         <h3>Annual Leave Payout</h3>
