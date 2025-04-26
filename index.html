@@ -31,7 +31,7 @@
             <!-- Sticky Toggle Row -->
               <div class="theme-toggle-inline">
                 <label class="theme-switch">
-                  <input type="checkbox" id="theme-toggle-checkbox" />
+                  <input type="checkbox" id="theme-toggle-checkbox" aria-label="Toggle light and dark mode" />
                   <span class="slider">
                     <span class="icon light">
                       <!-- Embedded SVG: Sun 2 -->
@@ -47,6 +47,11 @@
                     </span>
                   </span>
                 </label>
+                <button id="clear-saved-data" class="clear-saved-data-btn" title="Clear saved form data">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M5 6h14v2H5V6zm2 3h10l-1 11H8L7 9zm5-7a2 2 0 012 2h-4a2 2 0 012-2z"/>
+                  </svg>
+                </button>
               </div>
         </header>
         <main class="content-wrapper">   
@@ -514,10 +519,10 @@
                 <div id="error" class="error-message" style="display: none;"></div>
                 <div class="tabs">
                     <div class="tab-buttons">
-                        <button class="tab-button" data-tab="severance">Severance</button>
-                        <button class="tab-button" data-tab="retirement">Retirement</button>
-                        <button class="tab-button" data-tab="health">Health</button>
-                        <button class="tab-button" data-tab="lifetime">Lifetime</button>
+                        <button class="tab-button" data-tab="severance" aria-label="View Severance Benefits">Severance</button>
+                        <button class="tab-button" data-tab="retirement" aria-label="View Retirement Scenarios">Retirement</button>
+                        <button class="tab-button" data-tab="health" aria-label="View Health Continuation Costs">Health</button>
+                        <button class="tab-button" data-tab="lifetime" aria-label="View Lifetime Retirement Projection">Lifetime</button>
                     </div>
                     <div id="severance" class="tab-content">
                         <h3>Severance Pay Calculation</h3>
@@ -530,50 +535,57 @@
                     <div id="health" class="tab-content">
                         <h3>Health Insurance Calculation</h3>
                         <div id="health-results" class="results-container">
-  <p id="health-skipped-message" style="display: none; color: #555;">
-    You skipped the Health Insurance section. No cost estimates are available. Complete this section to compare FEHB, COBRA, and ACA options.
-  </p>
-</div>
+                          <p id="health-skipped-message" style="display: none; color: #555;">
+                            You skipped the Health Insurance section. No cost estimates are available. Complete this section to compare FEHB, COBRA, and ACA options.
+                          </p>
+                        </div>
                         </div>
                         <div id="lifetime" class="tab-content">
                             <h3>Lifetime Benefits Report (to Age 85)</h3>
-                            <div id="lifetime-results" class="results-container">
+                                <div id="lifetime-results" class="results-container">
+                                </div>
+                            <div class="print-button-container">
+                                <button class="print-btn" onclick="window.print()">🖨️ Print Lifetime Report</button>    
                             </div>
                         </div>
                     </div>
             </section>
         </main>
-    <footer>
-        <p>Developed by Roy Geiser | Foreign Service Benefits Calculator</p>
-        <p>This calculator is provided for informational purposes only. Please consult with HR for official calculations.</p>
-        <p>© 2024 Roy Geiser. Licensed under the <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">MIT License</a>.</p>
+    <footer class="footer">
+      <p>Developed by Roy Geiser | Foreign Service Benefits Calculator — Version 2.1</p>
+      <p class="footer-subtext">Last Updated: April 2025 | <a href="https://github.com/rjgeiser/FSOCalculator" target="_blank" rel="noopener noreferrer">View Source on GitHub</a></p>
+      <p>This calculator is provided for informational purposes only. Please consult with HR for official calculations.</p>
+      <p>© 2024 Roy Geiser. Licensed under the <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">MIT License</a>.</p>
     </footer>
-    
+
     <!-- Reference to your main JavaScript file -->
     <script src="js/main.js"></script>
     
     <div class="skip-link" tabindex="0">Skip to main content</div>
 
-<!-- Theme toggle script -->
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const themeToggle = document.getElementById("theme-toggle-checkbox");
+        <!-- Theme toggle script -->
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+              const themeToggle = document.getElementById("theme-toggle-checkbox");
+            
+              // Load saved theme from localStorage on page load
+              const savedTheme = localStorage.getItem("theme");
+              if (savedTheme) {
+                document.documentElement.setAttribute("data-theme", savedTheme);
+                themeToggle.checked = savedTheme === "dark";
+              }
+            
+              // Listen for user toggle
+              themeToggle.addEventListener("change", () => {
+                const isDark = themeToggle.checked;
+                const theme = isDark ? "dark" : "light";
+                document.documentElement.setAttribute("data-theme", theme);
+                localStorage.setItem("theme", theme);
+              });
+            });
+        </script>
     
-      // Load saved theme from localStorage on page load
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme) {
-        document.documentElement.setAttribute("data-theme", savedTheme);
-        themeToggle.checked = savedTheme === "dark";
-      }
-    
-      // Listen for user toggle
-      themeToggle.addEventListener("change", () => {
-        const isDark = themeToggle.checked;
-        const theme = isDark ? "dark" : "light";
-        document.documentElement.setAttribute("data-theme", theme);
-        localStorage.setItem("theme", theme);
-      });
-    });
-</script>
-</body>
+        <div id="toast-message" class="toast-message" style="display:none;"></div>
+
+    </body>
 </html> 
