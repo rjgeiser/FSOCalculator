@@ -459,6 +459,28 @@ label {
     .calculation-details {
         padding: 1rem;
     }
+
+    .theme-switch {
+    width: 56px; /* slightly smaller toggle for mobile */
+    height: 24px;
+  }
+
+  .slider::before {
+    width: 18px;
+    height: 18px;
+    top: 3px;
+    left: 3px;
+  }
+
+  input:checked + .slider::before {
+    transform: translateX(28px);
+  }
+
+  .icon {
+    font-size: 0.85rem;
+    height: 18px;
+    width: 18px;
+  }
 }
 
 /* Buttons */
@@ -488,6 +510,26 @@ label {
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
+}
+
+.clear-saved-data-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  vertical-align: bottom;
+  padding: 0;
+}
+
+.clear-saved-data-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.clear-saved-data-btn:hover {
+  color: #e53e3e; /* Slight red tint for danger */
 }
 
 /* Tabs */
@@ -534,6 +576,8 @@ label {
   padding: 0 1rem;
   margin-top: -0.5rem;          /* Pulls closer to header */
   margin-bottom: 0.5rem;
+  gap: 0.5rem; /* ✅ Space between toggle and trashcan */
+  line-height: 0; /* ✅ Bonus: Prevent misalignment at extreme zoom or browser defaults */
   background: transparent;
   z-index: 10;
 }
@@ -584,6 +628,35 @@ input:checked + .slider::before {
   justify-content: center;
   pointer-events: none;
   z-index: 2;
+}
+
+.toast-message {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background-color: #2b6cb0;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  font-size: 0.85rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index: 2000;
+}
+
+/* Show Toast */
+.toast-message.show {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Dark mode adaptation */
+[data-theme="dark"] .toast-message {
+  background-color: #63b3ed;
+  color: #1a202c;
 }
 
 /* Enhanced Mobile Responsiveness */
@@ -782,13 +855,17 @@ input:checked + .slider::before {
 .tooltip {
     position: relative;
     display: inline-block;
+    margin-left: 0.5rem; /* Optional spacing from headers */
+    cursor: pointer; /* Makes it obvious it's interactive */
 }
 
+/* Tooltip bubble */
 .tooltip .tooltip-text {
     visibility: hidden;
-    width: 200px;
-    color: white;
-    text-align: center;
+    width: 220px; /* Slightly wider for explanatory text */
+    background-color: #4a5568; /* Darker background */
+    color: #ffffff;
+    text-align: left; /* More natural reading alignment */
     padding: 8px;
     border-radius: 6px;
     position: absolute;
@@ -798,13 +875,33 @@ input:checked + .slider::before {
     transform: translateX(-50%);
     opacity: 0;
     transition: opacity 0.3s;
-    font-size: 0.85rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-size: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .tooltip:hover .tooltip-text {
     visibility: visible;
     opacity: 1;
+}
+
+/* Optional: style the question mark icon inside the tooltip span */
+.tooltip-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-color: #2b6cb0;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    font-size: 0.75rem;
+    line-height: 18px;
+    font-weight: bold;
+}
+
+/* Dark mode adaptation */
+[data-theme="dark"] .tooltip .tooltip-text {
+    background-color: #2d3748;
+    color: #e2e8f0;
 }
 
 /* Remove all progress indicator styles */
@@ -1433,6 +1530,16 @@ input[type="number"]::-webkit-inner-spin-button {
   overflow-y: unset;
 }
 
+/* Light Mode - Default Alert Info */
+.alert.alert-info {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #f0f9ff;
+  border-color: 3px solid #3b82f6;
+  border-radius: 4px;
+  color: #1a202c;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 1024px) {
     .container {
@@ -1488,65 +1595,52 @@ html, body {
 }
 
 /* Add styles for citations */
-.citation {
-    font-size: 0.85rem;
-    color: #666;
-    font-style: italic;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px dotted #ccc;
-}
-
-/* Add footer styles */
-footer {
-    margin-top: 2rem;
-    padding: 1rem;
-    text-align: center;
-    border-top: 1px solid #e2e8f0;
-    background-color: #f8fafc;
-    font-size: 0.875rem;
-    color: #64748b;
-}
-
-footer a {
-    color: #2563eb;
-    text-decoration: none;
-}
-
-footer a:hover {
-    text-decoration: underline;
-}
-
-/* ... existing code ... */
-
-/* Footer */
-footer {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    text-align: center;
-    border-top: 1px solid var(--border-color);
-    color: var(--secondary-color);
-}
-
-footer a {
-    color: var(--primary-color);
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-footer a:hover {
-    text-decoration: underline;
-}
-
-/* ... existing code ... */
-
-.citation {
     font-size: 0.85rem;
     color: #666;
     font-style: italic;
     margin-top: 15px;
     padding-top: 10px;
     border-top: 1px solid #eee;
+}
+
+/* Add footer styles */
+.footer {
+  margin-top: 2rem;
+  padding: 1rem 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-color, #4a5568);
+  background-color: var(--background-color, #f9fafb);
+  border-top: 1px solid #e2e8f0;
+}
+
+.footer a {
+  color: #2b6cb0;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+.footer-subtext {
+  font-size: 0.75rem;
+  opacity: 0.75;
+  margin: 0.5rem 0;
+}
+
+[data-theme="dark"] .footer-subtext {
+  opacity: 0.8; /* Slightly brighter in dark mode for better readability */
+}
+
+[data-theme="dark"] .footer {
+  background-color: #1a202c;
+  color: #a0aec0;
+  border-top: 1px solid #4a5568;
+}
+
+[data-theme="dark"] .footer a {
+  color: #63b3ed;
 }
 
 /* Mobile device specific styles */
@@ -1582,9 +1676,8 @@ footer a:hover {
 }
 
 .results-column {
-  overflow-y: auto;
-  height: 100%;
-  flex: 1; /* optional equal width */
+    min-width: 0;
+    display: none; /* Hide by default */
 }
 
 .results-column.visible {
@@ -1613,9 +1706,7 @@ footer a:hover {
 @media (max-width: 768px) {
     .results-column.visible {
         display: block !important;
-          overflow-y: auto;
-          height: 100%;
-          flex: 1; /* optional equal width */
+        width: 100%;
     }
     
     .results-container {
@@ -1679,6 +1770,36 @@ footer a:hover {
     border-radius: 8px;
 }
 
+.print-button-container {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.print-btn {
+  background-color: #2b6cb0;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.print-btn:hover {
+  background-color: #2c5282;
+}
+
+/* Dark mode adaptation */
+[data-theme="dark"] .print-btn {
+  background-color: #63b3ed;
+  color: #1a202c;
+}
+
+[data-theme="dark"] .print-btn:hover {
+  background-color: #4299e1;
+}
+
 @media (max-width: 1024px) {
     .content-wrapper {
         grid-template-columns: 1fr;
@@ -1689,6 +1810,61 @@ footer a:hover {
         border-bottom: 1px solid #e2e8f0;
         margin-bottom: 2rem;
     }
+}
+
+@media print {
+  /* Hide unwanted UI elements */
+  header,
+  .footer,
+  .theme-toggle-wrapper,
+  .tab-buttons,
+  .form-column,
+  .print-button-container {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Reset body and container layout */
+  body, 
+  .container, 
+  .content-wrapper, 
+  .results-column {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: auto;
+    background: white;
+    color: black;
+    overflow: visible;
+  }
+
+  /* Force results column to print correctly */
+  .results-column {
+    display: block;
+  }
+
+  /* Tables: keep from breaking across pages */
+  table, tr, td, th {
+    page-break-inside: avoid !important;
+    page-break-before: auto;
+    page-break-after: auto;
+  }
+
+  /* Table visuals */
+  .comparison-table table, 
+  .comparison-table th, 
+  .comparison-table td {
+    border: 1px solid black;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  /* Optional: Minimize any excessive page margins */
+  @page {
+    margin: 0.5in;
+  }
 }
 
 /* Light mode override (explicit) */
@@ -1763,6 +1939,19 @@ textarea {
   color: var(--text-color) !important;
 }
 
+/* Dark Mode - Alert Info */
+[data-theme="dark"] .alert.alert-info {
+  background-color: #2d3748 !important;
+  border-color: 3px solid #63b3ed;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .retirement-summary .alert-info {
+  background-color: #2d3748;  /* match dark mode background */
+  border-color: #63b3ed;      /* lighter blue for dark theme */
+  color: #e2e8f0;             /* light text for readability */
+}
+
 [data-theme="dark"] select,
 [data-theme="dark"] select option,
 [data-theme="dark"] input,
@@ -1810,6 +1999,20 @@ textarea {
   background-color: #2b6cb0 !important;
   color: #ffffff !important;
   border-color: #2b6cb0 !important;
+}
+
+/* Dark mode compatibility */
+[data-theme="dark"] .clear-saved-data-btn {
+  background: transparent !important;
+  border: none !important;
+  color: inherit !important;
+  box-shadow: none !important;
+}
+
+/* Dark Mode adaptation */
+[data-theme="dark"] .clear-saved-data-btn:hover {
+  background: transparent !important;
+  color: #feb2b2 !important; /* Softer light red hover in dark mode */
 }
 
 /* Dark mode support for comparison-table */
