@@ -2940,7 +2940,7 @@ static updateRetirementResults(container, retirement, formData, health) {
                     </div>`;
             }).join('')}
     </div>
-    ${this.generateRetirementNotes(minVeraAge, minServiceYears)}`;
+    ${this.generateRetirementNotes(minVeraAge, minServiceYears, retirement.mraDisplay)}`;
 }
 
     // --- Begin function updateLifetimeReport ---
@@ -3323,7 +3323,7 @@ static getRetirementTypeDetails(type, minServiceYears, minVeraAge) {
 }
 
 // Helper method to generate retirement notes
-static generateRetirementNotes(minVeraAge, minServiceYears) {
+static generateRetirementNotes(minVeraAge, minServiceYears, mraDisplay) {
     return `
     <div class="retirement-notes">
         <h5>Important Notes</h5>
