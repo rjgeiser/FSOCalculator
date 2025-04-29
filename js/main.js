@@ -505,7 +505,7 @@ reductionNote = `Annuity reduced by ${reduction}% for service under 20 years (TE
 
     // Calculate base annuity percentage
     if (isEligible) {
-        if (type === "deferred" && currentAge < 65)) {
+        if (type === "deferred" && currentAge < 65) {
             // Deferred retirement before 65: Always use 1% per year
             annuityPercentage = effectiveYearsService * 0.01;
         } else {
