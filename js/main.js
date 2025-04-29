@@ -2909,7 +2909,7 @@ static updateRetirementResults(container, retirement, formData, health) {
                     </tr>
                     <tr>
                         <th>Minimum Retirement Age (MRA)</th>
-                        <td>${mraDisplay || 'Not Available'}</td>
+                        <td>${retirement.mraDisplay || 'Not Available'}</td>
                     </tr>
                 </table>
             </div>
