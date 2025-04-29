@@ -1,6 +1,6 @@
 # 🇺🇸 FSO Separation Benefits Calculator
 
-A lightweight, privacy-friendly web calculator to help U.S. Foreign Service Officers estimate potential separation benefits, including Severance Pay, Retirement Annuity options, Lifetime Benefits, and Health Continuation Costs.
+A lightweight, privacy-friendly web calculator to help U.S. Foreign Service Officers estimate potential involuntary separation benefits, including Severance Pay, Retirement Annuity options, Lifetime Benefits, and Health Continuation Costs.
 
 ---
 
