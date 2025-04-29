@@ -460,8 +460,8 @@ reductionNote = `Annuity reduced by ${reduction}% for service under 20 years (TE
                 // Not yet eligible to collect, show future scenarios
                 description = `MRA+10 retirement (eligible to begin at age ${mraDisplay})`;
                 // Calculate reduction if starting at MRA
-                const yearsUnder62From = 62 - Age;
-                mraReduction = 0.05 * yearsUnder62FromMRA;
+                const yearsUnder62 = 62 - currentAge;
+                mraReduction = 0.05 * yearsUnder62;
                 
                 // Create comparison for waiting until 62
                 age62Comparison = {
