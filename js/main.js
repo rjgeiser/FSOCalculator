@@ -467,10 +467,10 @@ reductionNote = `Annuity reduced by ${reduction}% for service under 20 years (TE
                 age62Comparison = {
                     age: 62,
                     description: "MRA+10 (if waiting until age 62)",
-                    annuityPercentage: effectiveYearsService * 0.01,
+                    annuityPercentage: effectiveYearsService * 0.017,
                     mraReduction: 0,
-                    monthlyAnnuity: (highThreeAverage * effectiveYearsService * 0.01) / 12,
-                    annualAnnuity: highThreeAverage * effectiveYearsService * 0.01,
+                    monthlyAnnuity: (highThreeAverage * effectiveYearsService * 0.017) / 12,
+                    annualAnnuity: highThreeAverage * effectiveYearsService * 0.017,
                     yearsToWait: 62 - currentAge
                 };
             } else if (currentAge >= mraAge && currentAge < 62) {
@@ -483,10 +483,10 @@ reductionNote = `Annuity reduced by ${reduction}% for service under 20 years (TE
                 age62Comparison = {
                     age: 62,
                     description: "MRA+10 (if waiting until age 62)",
-                    annuityPercentage: effectiveYearsService * 0.01,
+                    annuityPercentage: effectiveYearsService * 0.017,
                     mraReduction: 0,
-                    monthlyAnnuity: (highThreeAverage * effectiveYearsService * 0.01) / 12,
-                    annualAnnuity: highThreeAverage * effectiveYearsService * 0.01,
+                    monthlyAnnuity: (highThreeAverage * effectiveYearsService * 0.017) / 12,
+                    annualAnnuity: highThreeAverage * effectiveYearsService * 0.017,
                     yearsToWait: 62 - currentAge
                 };
             }
@@ -3016,7 +3016,7 @@ static updateRetirementResults(container, retirement, formData, health) {
           immediate: 0.017,
           tera: 0.017,
           vera: 0.017,
-          mraPlusTen: 0.01,
+          mraPlusTen: 0.017,
           deferred: 0.015
         };
 
@@ -3274,9 +3274,9 @@ static getRetirementTypeDetails(type, minServiceYears, minVeraAge) {
                 </ul>
                 <h6>Benefit Calculation</h6>
                 <ul>
-                    <li>1% × years of service × high-3 average salary</li>
+                    <li>1.7% years of service (special circumstance multiplier) × high-3 average salary</li>
                     <li>Reduced by 5% per year under age 62</li>
-                    <li>No Special Retirement Supplement</li>
+                    <li>Special Retirement Supplement with COLA's until age 62(special circumstance of involuntary separation)</li>
                 </ul>`,
             policyNotes: `
                 <div class="alert alert-info">
@@ -3287,7 +3287,7 @@ static getRetirementTypeDetails(type, minServiceYears, minVeraAge) {
                         <li>Can postpone annuity to reduce or eliminate age reduction</li>
                     </ul>
                 </div>`,
-            citation: '<p class="citation">Source: 5 U.S.C. 8412(g); Foreign Service Act</p>'
+            citation: '<p class="citation">Source: 5 U.S.C. 8412(g); Foreign Service Act; 3 FAM 6183.4</p>'
         },
         deferred: {
             eligibilityRequirements: `
