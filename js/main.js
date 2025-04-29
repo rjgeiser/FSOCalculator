@@ -3276,7 +3276,7 @@ static getRetirementTypeDetails(type, minServiceYears, minVeraAge) {
                 <ul>
                     <li>1.7% years of service (special circumstance multiplier) × high-3 average salary</li>
                     <li>Reduced by 5% per year under age 62</li>
-                    <li>Special Retirement Supplement with COLA's until age 62(special circumstance of involuntary separation)</li>
+                    <li>Special Retirement Supplement with COLA's until age 62 (special circumstance of involuntary separation)</li>
                 </ul>`,
             policyNotes: `
                 <div class="alert alert-info">
