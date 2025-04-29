@@ -460,7 +460,7 @@ reductionNote = `Annuity reduced by ${reduction}% for service under 20 years (TE
                 // Not yet eligible to collect, show future scenarios
                 description = `MRA+10 retirement (eligible to begin at age ${mraDisplay})`;
                 // Calculate reduction if starting at MRA
-                const yearsUnder62FromMRA = 62 - mraAge;
+                const yearsUnder62From = 62 - Age;
                 mraReduction = 0.05 * yearsUnder62FromMRA;
                 
                 // Create comparison for waiting until 62
@@ -505,8 +505,8 @@ reductionNote = `Annuity reduced by ${reduction}% for service under 20 years (TE
 
     // Calculate base annuity percentage
     if (isEligible) {
-        if (type === "mra+10" || (type === "deferred" && currentAge < 65)) {
-            // For MRA+10 and deferred retirement before 65: Always use 1% per year
+        if (type === "deferred" && currentAge < 65)) {
+            // Deferred retirement before 65: Always use 1% per year
             annuityPercentage = effectiveYearsService * 0.01;
         } else {
             // For all other types and deferred at 65+: 1.7% for first 20 years, 1% for remaining years
@@ -555,7 +555,7 @@ reductionNote = `Annuity reduced by ${reduction}% for service under 20 years (TE
             under62: currentAge < 62
         },
         isEligibleForSupplement,
-        validType: type === "immediate" || type === "tera"
+        validType: type === "immediate" || type === "tera" || type === "mraPlusTen"
     });
 
     let supplementalAnnuity = 0;
@@ -1745,13 +1745,13 @@ function getMRA(currentAge) {
     const currentYear = new Date().getFullYear();
     const birthYear = currentYear - currentAge;
     
-    // Determine MRA based on birth year
+    // Determine  based on birth year
     if (birthYear <= 1947) {
         return 55;
     } else if (birthYear >= 1970) {
         return 57;
     } else {
-        // For birth years 1948-1969, MRA increases by 2 months for each year
+        // For birth years 1948-1969,  increases by 2 months for each year
         const yearsSince1947 = birthYear - 1947;
         const additionalMonths = yearsSince1947 * 2;
         return 55 + (additionalMonths / 12);
@@ -2909,7 +2909,7 @@ static updateRetirementResults(container, retirement, formData, health) {
                     </tr>
                     <tr>
                         <th>Minimum Retirement Age (MRA)</th>
-                        <td>${retirement.mraDisplay || 'Not Available'}</td>
+                        <td>${mraDisplay || 'Not Available'}</td>
                     </tr>
                 </table>
             </div>
@@ -3332,11 +3332,12 @@ static generateRetirementNotes(minVeraAge, minServiceYears) {
             <li>Actual benefits may vary based on final service computation and other factors</li>
             <li>Special Retirement Supplement (SRS) eligibility and calculation:
                 <ul>
-                    <li>Available for immediate retirement and VERA and TERA before age 62</li>
+                    <li>Available for immediate retirement, MRA+10 (when involuntaryily separated), VERA and TERA before age 62</li>
                     <li>Must meet one of these criteria:
                         <ul>
                             <li>Age 50+ with 20+ years of service</li>
                             <li>Any age with 25+ years of service</li>
+                            <li>MRA+10 retirement meeting minimum age (${mraDisplay}) and 10 years of service</li>
                             <li>VERA retirement meeting minimum age (${minVeraAge}) and service (${minServiceYears} years) requirements</li>
                             <li>TERA retirement meeting minimum service (${minServiceYears} years) requirement</li>
                         </ul>
